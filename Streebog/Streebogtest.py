@@ -101,7 +101,7 @@ class TestStreebog(unittest.TestCase):
         self.assertEqual(str256, expected256)
 
     def test_big(self):
-        test = bytearray(1024 * 128 )
+        test = bytearray(1024 * 1024 )
 
         StreebogPrecompute.streebog_hex(test)
 
