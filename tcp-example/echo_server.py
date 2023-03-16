@@ -2,7 +2,6 @@ import asyncio
 from contextlib import contextmanager
 
 pass_payload = False
-message_len = 100 * 1024
 
 
 class ExceptionGuard:
@@ -28,10 +27,11 @@ def exception_guard(message_on_exit: str = 'exit'):
 
 
 async def handle_echo(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    buf_size = 64 * 1024
     peer = writer.get_extra_info('peername')
     with ExceptionGuard(f'exit client handler for peer {peer}'):
         while True:
-            data = await reader.read(message_len)
+            data = await reader.read(buf_size)
             if not data:
                 # Empty message means EOF
                 assert reader.at_eof()
@@ -45,10 +45,6 @@ async def handle_echo(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
                 print(f"Send: {message!r}")
             writer.write(data)
             await writer.drain()
-
-    # print("Close the connection")
-    # writer.close()
-    # await writer.wait_closed()
 
 
 async def main():
