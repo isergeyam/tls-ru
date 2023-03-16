@@ -1,18 +1,12 @@
 import binascii
 
 
-def reverse64(b):
-    for i in range(32):
-        tmp = b[i]
-        b[i] = b[63 - i]
-        b[63 - i] = tmp
+def reverse(m):
+    for i in range(len(m)//2):
+        tmp = m[i]
+        m[i] = m[len(m)-1 - i]
+        m[len(m)-1 - i] = tmp
 
-
-def reverse32(b):
-    for i in range(16):
-        tmp = b[i]
-        b[i] = b[31 - i]
-        b[31 - i] = tmp
 
 
 def toint(a):
@@ -183,15 +177,14 @@ def len_of_bytearray_hex(a: bytearray):
 
 def streebog_Copy(Message: bytearray, m: bytearray, offset: int):
     for i in range(64):
-        m[i] = Message[len(Message) - 64 - offset + i]
+        m[63-i] = Message[offset + i]
 
 
-def streebog_Copy_last_(Message: bytearray, m: bytearray):
-    length = len(Message) % 64
-    for i in range(length):
-        m[i - length] = Message[i]
-    for i in range(64-length):
+def streebog_Copy_last_(Message: bytearray, m: bytearray, offset: int):
+    for i in range(64):
         m[i] = 0
+    for i in range(len(Message) % 64):
+        m[63 - i] = Message[i + offset]
 
 
 def streebog_hex(Message: bytearray, mode=512):
@@ -215,7 +208,7 @@ def streebog_hex(Message: bytearray, mode=512):
             N, h, M)
         N += 512
         offset += 64
-    streebog_Copy_last_(Message, m)
+    streebog_Copy_last_(Message, m, offset)
     m = startwith_1_hex_(m)
     M = toint(m)
     Sigma += M
@@ -224,10 +217,12 @@ def streebog_hex(Message: bytearray, mode=512):
     N += maxlength % 512
     h = streebog_G_int_(0, h, N)
     h = streebog_G_int_(0, h, Sigma)
+    res = bytearray(h.to_bytes(64, 'big'))
+    reverse(res)
     if mode == 512:
-        return bytearray(h.to_bytes(64, 'big'))
+        return res
     else:
-        return bytearray(h.to_bytes(64, 'big'))[:32]
+        return res[32:]
 
 
 streebog_C_int_precompute_()
