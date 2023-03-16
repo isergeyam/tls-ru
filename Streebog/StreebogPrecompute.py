@@ -18,6 +18,11 @@ def streebog_X_k_(k: bytearray, a: bytearray):
     return result
 
 
+def streebog_X_k_no_alloc_(k: bytearray, a: bytearray):
+    for i in range(64):
+        a[i] ^= k[i]
+
+
 streebog_pi_values_ = [252, 238, 221, 17, 207, 110, 49, 22, 251, 196, 250, 218, 35, 197, 4, 77, 233, 119, 240,
                        219, 147, 46, 153, 186, 23, 54, 241, 187, 20, 205, 95, 193, 249, 24, 101, 90, 226, 92, 239,
                        33, 129, 28, 60, 66, 139, 1, 142, 79, 5, 132, 2, 174, 227, 106, 143, 160, 6, 11, 237, 152, 127,
@@ -38,10 +43,6 @@ def streebog_pi_(a):
 
 
 def streebog_S_(a: bytearray):
-    if (len(a) != 64):
-        raise Exception(
-            "S transformation: byte arrays have length other than 64")
-
     for i in range(64):
         a[i] = streebog_pi_(a[i])
 
@@ -59,6 +60,11 @@ def streebog_P_(a: bytearray):
     for i in range(64):
         result[i] = a[streebog_tau_values_[i]]
     return result
+
+
+def streebog_P_no_alloc_(a: bytearray, result: bytearray):
+    for i in range(64):
+        result[i] = a[streebog_tau_values_[i]]
 
 
 streebog_a_values_ = [bytearray(b'\x8e \xfa\xa7+\xa0\xb4p'), bytearray(b'G\x10}\xdd\x9bPZ8'), bytearray(b'\xad\x08\xb0\xe0\xc3(-\x1c'), bytearray(b'\xd8\x04Xp\xef\x14\x98\x0e'), bytearray(b'l\x02,8\xf9\nL\x07'), bytearray(b'6\x01\x16\x1c\xf2\x05&\x8d'), bytearray(b'\x1b\x8e\x0b\x0ey\x8c\x13\xc8'), bytearray(b'\x83G\x8b\x07\xb2F\x87d'), bytearray(b'\xa0\x11\xd3\x80\x81\x8e\x8f@'), bytearray(b'P\x86\xe7@\xceG\xc9 '), bytearray(b'(C\xfd g\xad\xea\x10'), bytearray(b'\x14\xaf\xf0\x10\xbd\xd8u\x08'), bytearray(b'\n\xd9x\x08\xd0l\xb4\x04'), bytearray(b'\x05\xe2<\x04h6Z\x02'), bytearray(b'\x8cq\x1e\x024\x1b-\x01'), bytearray(b'F\xb6\x0f\x01\x1a\x83\x98\x8e'), bytearray(b'\x90\xda\xb5*8z\xe7o'), bytearray(b'Hm\xd4\x15\x1c=\xfd\xb9'), bytearray(b'$\xb8j\x84\x0e\x90\xf0\xd2'), bytearray(b'\x12\\5B\x07Hxi'), bytearray(b'\t.\x94!\x8d$<\xba'), bytearray(b'\x8a\x17J\x9e\xc8\x12\x1e]'), bytearray(b'E\x85%Od\t\x0f\xa0'), bytearray(b'\xac\xcc\x9c\xa92\x8a\x89P'), bytearray(b'\x9dM\xf0]_f\x14Q'), bytearray(b'\xc0\xa8x\xa0\xa13\n\xa6'), bytearray(b'`T<P\xde\x97\x05S'), bytearray(b'0*\x1e(o\xc5\x8c\xa7'), bytearray(b'\x18\x15\x0f\x14\xb9\xecF\xdd'), bytearray(b'\x0c\x84\x89\n\xd2v#\xe0'), bytearray(b'\x06B\xca\x05i;\x9fp'), bytearray(
@@ -98,6 +104,14 @@ def streebog_L_(a: bytearray):
     return result
 
 
+def streebog_L_no_alloc_(a: bytearray, result: bytearray):
+    streebog_X_k_no_alloc_(result, result)
+    for i in range(8):
+        for j in range(8):
+            XOR_8(streebog_l_values_[j][a[j + i*8]], result, i * 8)
+    return result
+
+
 def streebog_LPS_(a: bytearray):
 
     streebog_S_(a)
@@ -112,23 +126,34 @@ def streebog_LP_(a: bytearray):
     return a
 
 
+def streebog_LP_no_alloc_(a: bytearray, buffer: bytearray):
+    streebog_P_no_alloc_(a, buffer)
+    streebog_L_no_alloc_(buffer, a)
+
+
 def streebog_LPS_precomputation_():
     global streebog_LPS_values
-    streebog_LPS_values = []
-    key = bytearray(64)
+    streebog_LPS_values = [[bytearray(64)
+                            for j in range(256)] for i in range(64)]
+
+    buffer = bytearray(64)
     for position in range(64):
-        streebog_LPS_values.append([])
         for i in range(256):
-            key[position] = streebog_pi_values_[i]
-            streebog_LPS_values[position].append(streebog_LP_(key))
-        key[position] = 0
+            streebog_LPS_values[position][i][position] = streebog_pi_values_[i]
+            streebog_LP_no_alloc_(streebog_LPS_values[position][i], buffer)
 
 
 def streebog_LPS_precomputed_(a: bytearray):
     result = bytearray(64)
     for i in range(64):
-        result = streebog_X_k_(streebog_LPS_values[i][a[i]], result)
+        streebog_X_k_no_alloc_(streebog_LPS_values[i][a[i]], result)
     return result
+
+
+def streebog_LPS_precomputed_no_alloc_(a: bytearray, result: bytearray):
+    streebog_X_k_no_alloc_(result, result)
+    for i in range(64):
+        streebog_X_k_no_alloc_(streebog_LPS_values[i][a[i]], result)
 
 
 streebog_C_values = [bytearray(b'\xb1\x08[\xda\x1e\xca\xda\xe9\xeb\xcb/\x81\xc0e|\x1f/jvC.E\xd0\x16qN\xb8\x8du\x85\xc4\xfcK|\xe0\x91\x92gi\x01\xa2B*\x08\xa4`\xd3\x15\x05vt6\xcctM#\xdd\x80eY\xf2\xa6E\x07'), bytearray(b'o\xa3\xb5\x8a\xa9\x9d/\x1aO\xe3\x9dF\x0fp\xb5\xd7\xf3\xfe\xear\n#+\x98a\xd5^\x0f\x16\xb5\x011\x9a\xb5\x17k\x12\xd6\x99X\\\xb5a\xc2\xdb\n\xa7\xcaU\xdd\xa2\x1b\xd7\xcb\xcdV\xe6y\x04p!\xb1\x9b\xb7'), bytearray(b'\xf5t\xdc\xac+\xce/\xc7\n9\xfc(j=\x845\x06\xf1^_R\x9c\x1f\x8b\xf2\xeau\x14\xb1){{\xd3\xe2\x0f\xe4\x905\x9e\xb1\xc1\xc9:7`b\xdb\t\xc2\xb6\xf4C\x86z\xdb1\x99\x1e\x96\xf5\n\xba\n\xb2'), bytearray(b'\xef\x1f\xdf\xb3\xe8\x15f\xd2\xf9H\xe1\xa0]q\xe4\xddH\x8e\x85~3\\<}\x9dr\x1c\xadh^5?\xa9\xd7,\x82\xed\x03\xd6u\xd8\xb7\x133\x93R\x03\xbe4S\xea\xa1\x93\xe87\xf1"\x0c\xbe\xbc\x84\xe3\xd1.'), bytearray(b"K\xeak\xac\xadGG\x99\x9a?A\x0cl\xa9#c\x7f\x15\x1c\x1f\x16\x86\x10J5\x9e5\xd7\x80\x0f\xff\xbd\xbf\xcd\x17G%:\xf5\xa3\xdf\xff\x00\xb7#\'\x1a\x16zV\xa2~\xa9\xeac\xf5`\x17X\xfd|l\xfeW"), bytearray(b'\xaeO\xae\xae\x1d:\xd3\xd9o\xa4\xc3;z09\xc0-f\xc4\xf9QB\xa4l\x18\x7f\x9a\xb4\x9a\xf0\x8e\xc6\xcf\xfa\xa6\xb7\x1c\x9a\xb7\xb4\n\xf2\x1ff\xc2\xbe\xc6\xb6\xbfq\xc5r6\x90O5\xfah@zFd}n'), bytearray(
@@ -138,22 +163,30 @@ streebog_C_values = [bytearray(b'\xb1\x08[\xda\x1e\xca\xda\xe9\xeb\xcb/\x81\xc0e
 def streebog_E_(K: bytearray, m: bytearray):
     result = m.copy()
     K = K.copy()
-    result = streebog_X_k_(K, result)
+    streebog_X_k_no_alloc_(K, result)
     for i in range(12):
         result = streebog_LPS_precomputed_(result)
-        K = streebog_X_k_(streebog_C_values[i], K)
+        streebog_X_k_no_alloc_(streebog_C_values[i], K)
         K = streebog_LPS_precomputed_(K)
-        result = streebog_X_k_(K, result)
+        streebog_X_k_no_alloc_(K, result)
     return result
 
 
 def streebog_G_(N: bytearray, h: bytearray, m: bytearray):
     result5 = streebog_X_k_(h, N)
     result4 = streebog_LPS_precomputed_(result5)
-    result3 = streebog_E_( result4, m)
+    result3 = streebog_E_(result4, m)
     result2 = streebog_X_k_(result3, h)
     result = streebog_X_k_(result2, m)
     return result
+
+
+def streebog_G_no_alloc_(N: bytearray, h: bytearray, m: bytearray):
+    result5 = streebog_X_k_(h, N)
+    streebog_X_k_no_alloc_(m, h)
+    result4 = streebog_LPS_precomputed_(result5)
+    result3 = streebog_E_(result4, m)
+    streebog_X_k_no_alloc_(result3, h)
 
 
 def startwith_1_hex_(m: bytearray):
@@ -201,22 +234,23 @@ def streebog_hex(Message: bytearray, mode=512):
     else:
         IV = bytearray(b'\x01'*64)
     h = IV.copy()
-    N = bytearray(64)
-    Sigma = bytearray(64)
+    N = 0
+    Sigma = 0
     M = Message.copy()
     while (len(M) > 64 or (len(M) == 64 and M[0] > 128)):
         m = M[-64:]
-        h = streebog_G_(N, h, m)
-        N = add_int_(N, 512)
-        Sigma = add_as_ints(Sigma, m)
+        Sigma += int.from_bytes(m, "big")
+        streebog_G_no_alloc_(bytearray(N.to_bytes(64, 'big')), h, m)
+        N += 512
+
         M = M[:-64]
     m = startwith_1_hex_(M)
-    h = streebog_G_(N, h, m)
-    N = add_int_(N, len_of_bytearray_hex(M))
-    Sigma = add_as_ints(Sigma, m)
+    streebog_G_no_alloc_(bytearray(N.to_bytes(64, 'big')), h, m)
+    N += len_of_bytearray_hex(M)
+    Sigma += int.from_bytes(m, "big")
     tmp = bytearray(64)
-    h = streebog_G_(tmp, h, N)
-    h = streebog_G_(tmp, h, Sigma)
+    streebog_G_no_alloc_(tmp, h, bytearray(N.to_bytes(64, 'big')))
+    streebog_G_no_alloc_(tmp, h, bytearray(Sigma.to_bytes(64, 'big')))
     if mode == 512:
         return h
     else:
@@ -225,5 +259,3 @@ def streebog_hex(Message: bytearray, mode=512):
 
 streebog_l_precompute_()
 streebog_LPS_precomputation_()
-
-
