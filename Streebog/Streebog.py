@@ -1,4 +1,4 @@
-
+import binascii
 
 def XOR_8(lhs: bytearray, rhs: bytearray):
     if (len(lhs) != len(rhs)):
@@ -122,9 +122,9 @@ def streebog_G_(N: bytearray, h: bytearray, m: bytearray):
     return streebog_X_k_(streebog_X_k_(streebog_E_(streebog_LPS_(streebog_X_k_(h, N)), m), h), m)
 
 
+
 def startwith_1_hex_(m: bytearray):
     result = bytearray(64)
-
     first = True
     for i in range(len(m)):
         if first:
@@ -137,6 +137,8 @@ def startwith_1_hex_(m: bytearray):
                 first = False
         else:
             result[64-len(m) + i] = m[i]
+    if first:
+        result[63] = 1
     return result
 
 
@@ -177,13 +179,23 @@ def streebog_hex(Message: bytearray, mode=512):
         Sigma = add_as_ints(Sigma, m)
         M = M[:-64]
     m = startwith_1_hex_(M)
+ 
     h = streebog_G_(N, h, m)
+
     N = add_int_(N, len_of_bytearray_hex(M))
+
+ 
     Sigma = add_as_ints(Sigma, m)
+
     tmp = bytearray(64)
     h = streebog_G_(tmp, h, N)
+    tmp = bytearray(64)
     h = streebog_G_(tmp, h, Sigma)
     if mode == 512:
         return h
     else:
         return h[:32]
+
+
+
+streebog_hex(bytearray(0))

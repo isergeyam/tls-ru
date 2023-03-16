@@ -1,9 +1,42 @@
 import unittest
 import Streebog
 import StreebogPrecompute
+import binascii
+
+def reverse64(b):
+    for i in range(32):
+        tmp = b[i]
+        b[i] = b[63 - i] 
+        b[63 - i] = tmp
+
+def reverse32(b):
+    for i in range(16):
+        tmp = b[i]
+        b[i] = b[31 - i] 
+        b[31 - i] = tmp
+
 
 
 class TestStreebog(unittest.TestCase):
+
+    def test_empty(self):
+        m = bytearray.fromhex('')
+        str512exp = bytearray.fromhex('8e945da209aa869f0455928529bcae4679e9873ab707b55315f56ceb98bef0a7362f715528356ee83cda5f2aac4c6ad2ba3a715c1bcd81cb8e9f90bf4c1c1a8a')
+        reverse64(str512exp)
+        str256exp = bytearray.fromhex('3f539a213e97c802cc229d474c6aa32a825a360b2a933a949fd925208d9ce1bb')
+        reverse32(str256exp)
+        str512pre = StreebogPrecompute.streebog_hex(m)
+        str512 = Streebog.streebog_hex(m)
+        str256pre = StreebogPrecompute.streebog_hex(m, 256)
+        str256 = Streebog.streebog_hex(m, 256)
+
+        self.assertEqual(str512pre, str512exp)
+        self.assertEqual(str512, str512exp)
+
+        self.assertEqual(str256pre, str256exp)
+        self.assertEqual(str256, str256exp)
+
+
 
     def test_short(self):
         m = bytearray.fromhex(
@@ -67,6 +100,10 @@ class TestStreebog(unittest.TestCase):
         self.assertEqual(str512, expected512)
         self.assertEqual(str256, expected256)
 
+    def test_big(self):
+        test = bytearray(1024 * 128 )
+
+        StreebogPrecompute.streebog_hex(test)
 
 if __name__ == '__main__':
     unittest.main()

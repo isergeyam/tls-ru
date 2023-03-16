@@ -1,4 +1,4 @@
-
+import binascii
 
 def XOR_8(lhs: bytearray, rhs: bytearray, offset_rhs: int = 0):
 
@@ -21,6 +21,11 @@ def streebog_X_k_(k: bytearray, a: bytearray):
 def streebog_X_k_no_alloc_(k: bytearray, a: bytearray):
     for i in range(64):
         a[i] ^= k[i]
+
+
+def streebog_X_k_no_alloc_with_res_(k: bytearray, a: bytearray, res: bytearray):
+    for i in range(64):
+        res[i] = a[i] ^ k[i]
 
 
 streebog_pi_values_ = [252, 238, 221, 17, 207, 110, 49, 22, 251, 196, 250, 218, 35, 197, 4, 77, 233, 119, 240,
@@ -172,6 +177,19 @@ def streebog_E_(K: bytearray, m: bytearray):
     return result
 
 
+def streebog_E_no_alloc_(K: bytearray, m: bytearray, buffer: bytearray):
+    streebog_X_k_no_alloc_(K, m)
+    for i in range(6):
+        streebog_LPS_precomputed_no_alloc_(m, buffer)
+        streebog_X_k_no_alloc_(streebog_C_values[2*i], K)
+        streebog_LPS_precomputed_no_alloc_(K, m)
+        streebog_X_k_no_alloc_(m, buffer)
+        streebog_X_k_no_alloc_(streebog_C_values[2*i + 1], m)
+        streebog_LPS_precomputed_no_alloc_(m, K)
+        streebog_LPS_precomputed_no_alloc_(buffer, m)
+        streebog_X_k_no_alloc_(K, m)
+
+
 def streebog_G_(N: bytearray, h: bytearray, m: bytearray):
     result5 = streebog_X_k_(h, N)
     result4 = streebog_LPS_precomputed_(result5)
@@ -181,17 +199,16 @@ def streebog_G_(N: bytearray, h: bytearray, m: bytearray):
     return result
 
 
-def streebog_G_no_alloc_(N: bytearray, h: bytearray, m: bytearray):
-    result5 = streebog_X_k_(h, N)
+def streebog_G_no_alloc_(N: bytearray, h: bytearray, m: bytearray, buffer1: bytearray, buffer2: bytearray):
+    streebog_X_k_no_alloc_with_res_(N, h, buffer2)
     streebog_X_k_no_alloc_(m, h)
-    result4 = streebog_LPS_precomputed_(result5)
-    result3 = streebog_E_(result4, m)
-    streebog_X_k_no_alloc_(result3, h)
+    streebog_LPS_precomputed_no_alloc_(buffer2, buffer1)
+    streebog_E_no_alloc_(buffer1, m, N)
+    streebog_X_k_no_alloc_(m, h)
 
 
 def startwith_1_hex_(m: bytearray):
     result = bytearray(64)
-
     first = True
     for i in range(len(m)):
         if first:
@@ -204,6 +221,8 @@ def startwith_1_hex_(m: bytearray):
                 first = False
         else:
             result[64-len(m) + i] = m[i]
+    if first:
+        result[63] = 1
     return result
 
 
@@ -228,29 +247,59 @@ def len_of_bytearray_hex(a: bytearray):
     return 0
 
 
+def streebog_Copy(Message: bytearray, m: bytearray, offset: int):
+    for i in range(64):
+        m[i] = Message[len(Message) - 64 - offset + i]
+
+
+def streebog_Copy_last_(Message: bytearray, m: bytearray):
+    length = len(Message) % 64
+    for i in range(length):
+        m[i - length] = Message[i]
+    for i in range(64-length):
+        m[i] = 0
+
+
 def streebog_hex(Message: bytearray, mode=512):
+    buffer1 = bytearray(64)
+    buffer2 = bytearray(64)
     if mode == 512:
-        IV = bytearray(64)
+        h = bytearray(64)
     else:
-        IV = bytearray(b'\x01'*64)
-    h = IV.copy()
+        h = bytearray(b'\x01'*64)
     N = 0
     Sigma = 0
-    M = Message.copy()
-    while (len(M) > 64 or (len(M) == 64 and M[0] > 128)):
-        m = M[-64:]
+    m = bytearray(64)
+    offset = 0
+    maxlength = len(Message) * 8
+    if maxlength != 0 and Message[0] < 16:
+        maxlength -= 4
+    while (N + 512 < maxlength):
+        streebog_Copy(Message, m, offset)
         Sigma += int.from_bytes(m, "big")
-        streebog_G_no_alloc_(bytearray(N.to_bytes(64, 'big')), h, m)
+        Sigma %= 2**512
+        streebog_G_no_alloc_(
+            bytearray(N.to_bytes(64, 'big')), h, m, buffer1, buffer2)
         N += 512
+        offset += 64
 
-        M = M[:-64]
-    m = startwith_1_hex_(M)
-    streebog_G_no_alloc_(bytearray(N.to_bytes(64, 'big')), h, m)
-    N += len_of_bytearray_hex(M)
+    streebog_Copy_last_(Message, m)
+    m = startwith_1_hex_(m)
+
     Sigma += int.from_bytes(m, "big")
+    Sigma %= 2**512
+
+    
+    streebog_G_no_alloc_(bytearray(N.to_bytes(64, 'big')),
+                         h, m, buffer1, buffer2)
+    N += maxlength % 512
+
     tmp = bytearray(64)
-    streebog_G_no_alloc_(tmp, h, bytearray(N.to_bytes(64, 'big')))
-    streebog_G_no_alloc_(tmp, h, bytearray(Sigma.to_bytes(64, 'big')))
+    streebog_G_no_alloc_(tmp, h, bytearray(
+        N.to_bytes(64, 'big')), buffer1, buffer2)
+    tmp = bytearray(64)
+    streebog_G_no_alloc_(tmp, h, bytearray(
+        Sigma.to_bytes(64, 'big')), buffer1, buffer2)
     if mode == 512:
         return h
     else:
@@ -259,3 +308,5 @@ def streebog_hex(Message: bytearray, mode=512):
 
 streebog_l_precompute_()
 streebog_LPS_precomputation_()
+
+
