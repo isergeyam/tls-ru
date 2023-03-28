@@ -2,6 +2,7 @@ import asyncio
 import os
 
 pass_payload = False
+message_len = 100 * 1024 * 1024
 
 
 async def tcp_echo_client(message: str | bytes):
@@ -31,7 +32,6 @@ async def tcp_echo_client(message: str | bytes):
 
 
 async def main():
-    message_len = 100 * 1024 * 1024
     if pass_payload:
         await tcp_echo_client(os.urandom(message_len))
     else:
