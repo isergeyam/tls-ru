@@ -81,7 +81,6 @@ class TestStreebog(unittest.TestCase):
         byte_array_256_exp = bytearray.fromhex(
             exp256)
         byte_array_input = input
-        
 
         byte_array_512_res = StreebogPrecompute.streebog(
             byte_array_input, 512)
@@ -136,6 +135,10 @@ class TestStreebog(unittest.TestCase):
         self.check_bytes_input(bytearray(64),
                                'df1fda9ce83191390537358031db2ecaa6aa54cd0eda241dc107105e13636b95',
                                'b0fd29ac1b0df441769ff3fdb8dc564df67721d6ac06fb28ceffb7bbaa7948c6c014ac999235b58cb26fb60fb112a145d7b4ade9ae566bf2611402c552d20db7')
+
+        self.check_hex_input('36373435323330313e3f3c3d3a3b383926272425222320212e2f2c2d2a2b282936363636363636363636363636363636363636363636363636363636363636360126bdb87800af214341456563780100',
+                             '612fbfc167a28e5554794a692ef508394fee9a8a3ba57ae919f44b62a2a361d4',
+                             '0d5a45fe1a3af3d8b8de724d6e03de7bfaeb479ceaf4b9dae658effb30d09287081164767218d4db508f6fd1b355ab0e47d2a1fefcc513f779ac47a723b6fc92')
 
     def check_single(self, input, exp512, exp256):
         byte_array_512_exp = bytearray.fromhex(

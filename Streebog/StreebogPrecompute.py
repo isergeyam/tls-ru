@@ -8,7 +8,6 @@ def reverse(m):
         m[len(m)-1 - i] = tmp
 
 
-
 def toint(a):
     return int.from_bytes(a, 'big')
 
@@ -146,17 +145,15 @@ def streebog_G_int_(N: int, h: int, m: int):
     return result5
 
 
-def startwith_1_hex_(m: bytearray):
+def startwith_1_byte_(m: bytearray):
     result = bytearray(64)
     first = True
     for i in range(len(m)):
         if first:
             if m[i] != 0:
-                if m[i] >= 16:
-                    result[64-len(m) + i - 1] = 1
-                    result[64-len(m) + i] = m[i]
-                else:
-                    result[64-len(m) + i] = m[i] + 16
+                result[64-len(m) + i - 1] = 1
+                result[64-len(m) + i] = m[i]
+
                 first = False
         else:
             result[64-len(m) + i] = m[i]
@@ -186,6 +183,8 @@ def streebog_Copy_last_(Message: bytearray, m: bytearray, offset: int):
     for i in range(len(Message) % 64):
         m[63 - i] = Message[i + offset]
 
+    m[63 - len(Message) + offset] = 1
+
 
 def streebog(Message: bytearray, mode=512):
     if mode == 512:
@@ -197,7 +196,7 @@ def streebog(Message: bytearray, mode=512):
     m = bytearray(64)
     offset = 0
     maxlength = len(Message) * 8
-    
+
     while (N + 512 <= maxlength):
         streebog_Copy(Message, m, offset)
         M = toint(m)
@@ -208,7 +207,7 @@ def streebog(Message: bytearray, mode=512):
         N += 512
         offset += 64
     streebog_Copy_last_(Message, m, offset)
-    m = startwith_1_hex_(m)
+    print((maxlength % 512) // 8)
     M = toint(m)
     Sigma += M
     Sigma %= 2**512
@@ -227,5 +226,3 @@ def streebog(Message: bytearray, mode=512):
 streebog_C_int_precompute_()
 streebog_l_precompute_()
 streebog_LPS_precomputation_()
-
-streebog(bytearray(64))
