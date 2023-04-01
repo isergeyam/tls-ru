@@ -187,7 +187,7 @@ def streebog_Copy_last_(Message: bytearray, m: bytearray, offset: int):
         m[63 - i] = Message[i + offset]
 
 
-def streebog_hex(Message: bytearray, mode=512):
+def streebog(Message: bytearray, mode=512):
     if mode == 512:
         h = 0
     else:
@@ -197,9 +197,8 @@ def streebog_hex(Message: bytearray, mode=512):
     m = bytearray(64)
     offset = 0
     maxlength = len(Message) * 8
-    if maxlength != 0 and Message[0] < 16:
-        maxlength -= 4
-    while (N + 512 < maxlength):
+    
+    while (N + 512 <= maxlength):
         streebog_Copy(Message, m, offset)
         M = toint(m)
         Sigma += M
@@ -228,3 +227,5 @@ def streebog_hex(Message: bytearray, mode=512):
 streebog_C_int_precompute_()
 streebog_l_precompute_()
 streebog_LPS_precomputation_()
+
+streebog(bytearray(64))
