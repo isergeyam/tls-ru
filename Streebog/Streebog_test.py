@@ -1,6 +1,6 @@
 import unittest
+import time
 import Streebog
-import StreebogPrecompute
 import binascii
 
 
@@ -14,14 +14,18 @@ def reverse(m):
 class TestStreebog(unittest.TestCase):
 
     def test_big_zero(self):
+        start = time.time()
         test = bytearray(1024 * 1024)
-        res = StreebogPrecompute.streebog(test)
+        res = Streebog.streebog(test)
         print(binascii.hexlify(res))
+        print("1 mb per :", time.time()-start)
 
     def test_big_ff(self):
+        start = time.time()
         test = bytearray.fromhex('ff'*(1024*1024))
-        res = StreebogPrecompute.streebog(test)
+        res = Streebog.streebog(test)
         print(binascii.hexlify(res))
+        print("1 mb per :", time.time()-start)
 
     def check_hex_input_from_gost(self, input,  exp256, exp512):
         byte_array_512_exp = bytearray.fromhex(
@@ -35,13 +39,8 @@ class TestStreebog(unittest.TestCase):
         reverse(byte_array_512_exp)
         reverse(byte_array_input)
 
-        byte_array_512_res = StreebogPrecompute.streebog(
-            byte_array_input, 512)
-        byte_array_256_res = StreebogPrecompute.streebog(
-            byte_array_input, 256)
-
-        self.assertEqual(byte_array_512_res, byte_array_512_exp)
-        self.assertEqual(byte_array_256_res, byte_array_256_exp)
+        self.check_input(byte_array_input, byte_array_256_exp,
+                         byte_array_512_exp)
 
     def check_hex_input(self, input, exp256, exp512):
         byte_array_512_exp = bytearray.fromhex(
@@ -51,13 +50,8 @@ class TestStreebog(unittest.TestCase):
         byte_array_input = bytearray.fromhex(
             input)
 
-        byte_array_512_res = StreebogPrecompute.streebog(
-            byte_array_input, 512)
-        byte_array_256_res = StreebogPrecompute.streebog(
-            byte_array_input, 256)
-
-        self.assertEqual(byte_array_512_res, byte_array_512_exp)
-        self.assertEqual(byte_array_256_res, byte_array_256_exp)
+        self.check_input(byte_array_input, byte_array_256_exp,
+                         byte_array_512_exp)
 
     def check_string_input(self, input, exp256, exp512):
         byte_array_512_exp = bytearray.fromhex(
@@ -67,13 +61,8 @@ class TestStreebog(unittest.TestCase):
         byte_array_input = bytearray()
         byte_array_input.extend(map(ord, input))
 
-        byte_array_512_res = StreebogPrecompute.streebog(
-            byte_array_input, 512)
-        byte_array_256_res = StreebogPrecompute.streebog(
-            byte_array_input, 256)
-
-        self.assertEqual(byte_array_512_res, byte_array_512_exp)
-        self.assertEqual(byte_array_256_res, byte_array_256_exp)
+        self.check_input(byte_array_input, byte_array_256_exp,
+                         byte_array_512_exp)
 
     def check_bytes_input(self, input, exp256, exp512):
         byte_array_512_exp = bytearray.fromhex(
@@ -82,12 +71,21 @@ class TestStreebog(unittest.TestCase):
             exp256)
         byte_array_input = input
 
-        byte_array_512_res = StreebogPrecompute.streebog(
+        self.check_input(byte_array_input, byte_array_256_exp,
+                         byte_array_512_exp)
+
+    def check_input(self, byte_array_input, byte_array_256_exp, byte_array_512_exp):
+        byte_array_512_res = Streebog.streebog(
             byte_array_input, 512)
-        byte_array_256_res = StreebogPrecompute.streebog(
+        byte_array_256_res = Streebog.streebog(
             byte_array_input, 256)
 
+        self.hasher512.update(byte_array_input)
+
+        byte_array_512_res_hasher = self.hasher512.finish()
+
         self.assertEqual(byte_array_512_res, byte_array_512_exp)
+        self.assertEqual(byte_array_512_res_hasher, byte_array_512_exp)
         self.assertEqual(byte_array_256_res, byte_array_256_exp)
 
     def test_gost(self):
@@ -140,25 +138,21 @@ class TestStreebog(unittest.TestCase):
                              '612fbfc167a28e5554794a692ef508394fee9a8a3ba57ae919f44b62a2a361d4',
                              '0d5a45fe1a3af3d8b8de724d6e03de7bfaeb479ceaf4b9dae658effb30d09287081164767218d4db508f6fd1b355ab0e47d2a1fefcc513f779ac47a723b6fc92')
 
-    def check_single(self, input, exp512, exp256):
-        byte_array_512_exp = bytearray.fromhex(
-            exp512)
-        byte_array_256_exp = bytearray.fromhex(
-            exp256)
-        byte_array_input = bytearray.fromhex(
-            input)
+    def test_hasher_by_parts(self):
+        for i in range(16):
+            for j in range(64):
+                for k in range(j):
+                    self.hasher512.update(bytearray(i))
+                    self.hasher256.update(bytearray(i))
+                res1 = self.hasher512.finish()
+                res2 = Streebog.streebog(bytearray(i*j))
+                res3 = Streebog.streebog(bytearray(i*j), 256)
+                res4 = self.hasher256.finish()
+                self.assertEqual(res1, res2)
+                self.assertEqual(res3, res4)
 
-        byte_array_512_res = StreebogPrecompute.streebog(
-            byte_array_input, 512)
-        byte_array_256_res = StreebogPrecompute.streebog(
-            byte_array_input, 256)
-
-        self.assertEqual(byte_array_512_res, byte_array_512_exp)
-        self.assertEqual(byte_array_256_res, byte_array_256_exp)
-
-    inputs = []
-    results256 = []
-    results512 = []
+    hasher512 = Streebog.StreebogHasher(512)
+    hasher256 = Streebog.StreebogHasher(256)
 
 
 if __name__ == '__main__':
