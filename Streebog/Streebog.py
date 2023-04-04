@@ -272,6 +272,10 @@ class StreebogHasher:
             self.update(other)
         return self
     
+    def __rshift__(self, other):
+        return self.finish()
+    
+    
     def __invert__(self ):
         return self.finish()
         
@@ -320,7 +324,7 @@ if __name__ == '__main__':
 
     hasher << input << input
 
-    res = ~hasher     
+    res = hasher >> 0
 
     prb(res)
     prb(streebog(input*2))
