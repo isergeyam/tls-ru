@@ -2,10 +2,10 @@ from field import Zp
 
 
 class WeierstrassCurve(object):
-    def __init__(self, p: int, a, b):
-        """Weierstrass elliptic curve as: (y**2 = x**3 + a * x + b) in Zq
-        - a, b: Zp[q].Elements params of curve formula
-        - q: prime number
+    def __init__(self, p: int, a, b, m: int):
+        """Weierstrass elliptic curve as: (y**2 = x**3 + a * x + b) in Zp
+        - a, b: Zp[p].Elements params of curve formula
+        - p: prime number
         """
         assert p > 2
         self.F = Zp(p)

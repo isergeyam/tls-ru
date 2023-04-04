@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-pass_payload = False
+pass_payload = True
 message_len = 100 * 1024 * 1024
 
 
@@ -17,9 +17,9 @@ async def tcp_echo_client(message: str | bytes):
         data = message.encode()
         read_len = len(data)
         writer.write(message.encode())
-    await writer.drain()
+    # await writer.drain()
 
-    data = await reader.read(read_len)
+    data = await reader.readexactly(read_len)
     if pass_payload:
         print(f"Received payload of {len(data)} bytes")
         assert data == message

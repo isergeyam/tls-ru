@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import contextmanager
 
-pass_payload = False
+pass_payload = True
 
 
 class ExceptionGuard:
