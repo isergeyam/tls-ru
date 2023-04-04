@@ -327,15 +327,13 @@ def Decode1(input: bytearray):
 
 class Kuznechik:
     def __init__(self, key) -> None:
-        self.key = [0 for j in range(10)]
+        self.K = key
+        self.n = 128
         self.UnpackKey(key)
-
-     
-
-    
 
     def UnpackKey(self, key):
 
+        self.key = [0 for j in range(10)]
         self.key[0] = int.from_bytes(key[:16], 'big')
         self.key[1] = int.from_bytes(key[16:], 'big')
 
@@ -397,66 +395,69 @@ class Kuznechik:
 
     def __rshift__(self, other):
         return self.Decode(other)
-    
-
 
 Prcompute_nonlinear_inverse()
 Precompute_LS()
 Precompute_LS_inv()
 
-UnpackKey()
+if __name__ == "__main__":
+
+    UnpackKey()
 
 
 
-for i in kkey:
-    prin(i)
+    for i in kkey:
+        prin(i)
 
-input = bytearray.fromhex('1122334455667700ffeeddccbbaa9988')
+    input = bytearray.fromhex('1122334455667700ffeeddccbbaa9988')
 
-mykey = bytearray.fromhex('8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef')
+    mykey = bytearray.fromhex('8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef')
 
-kuz = Kuznechik(mykey)
-
-
-res = Encode(input)
-
-res2 = kuz << input
+    kuz = Kuznechik(mykey)
 
 
+    res = Encode(input)
 
-print(binascii.hexlify(res))
-print(binascii.hexlify(res2))
-
-res3 = Decode(res)
-res4 = kuz >> res2
-
-print(binascii.hexlify(res3))
-print(binascii.hexlify(res4))
+    res2 = kuz << input
 
 
-start = time.time()
+
+    print(binascii.hexlify(res))
+    print(binascii.hexlify(res2))
+
+    res3 = Decode(res)
+    res4 = kuz >> res2
+
+    print(binascii.hexlify(res3))
+    print(binascii.hexlify(res4))
 
 
-for i in range(65536):
-    input = kuz << input
-
-print("decode time: ",time.time() - start)
-
-start = time.time()
+    start = time.time()
 
 
-for i in range(65536):
-    input = kuz >> input
+    for i in range(65536):
+        input = kuz << input
 
-print("encode time: ",time.time() - start)
+    print("decode time: ",time.time() - start)
+
+    start = time.time()
 
 
-key = '8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef'
+    for i in range(65536):
+        input = kuz >> input
 
-m = '1234567890abcef00000000000000000'
+    print("encode time: ",time.time() - start)
 
-mykey = bytearray.fromhex(key)
 
-kuz = Kuznechik(mykey)
-res = kuz << bytearray.fromhex(m)
-print(binascii.hexlify(res))
+    key = '8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef'
+
+    m = '1234567890abcef00000000000000000'
+
+    mykey = bytearray.fromhex(key)
+
+    kuz = Kuznechik(mykey)
+    m = bytearray.fromhex(m)
+    print(mykey.hex())
+    print(m.hex())
+    res = kuz << m
+    print(res.hex())
