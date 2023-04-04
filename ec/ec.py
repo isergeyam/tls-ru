@@ -15,6 +15,7 @@ class WeierstrassCurve(object):
         self.a = a
         self.b = b
         self.p = p
+        self.m = m
         pass
 
     def __call__(self, x, y):
@@ -94,11 +95,15 @@ class WeierstrassCurve(object):
 
 
 def main():
+    # source: https://neuromancer.sk/std/nist/P-256
     p = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff
     F = Zp(p)
     a = F[0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc]
     b = F[0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b]
-    p256 = WeierstrassCurve(p, a, b)
+    m = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
+    p256 = WeierstrassCurve(p, a, b, m)
+    print(p256.F.p)
+    print(p256.m)
     G = p256(F[0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296],
              F[0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5])
     # source: http://point-at-infinity.org/ecc/nisttv
