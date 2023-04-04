@@ -1,11 +1,13 @@
 import binascii
 import time
 
+
 def reverse(m):
     for i in range(len(m)//2):
         tmp = m[i]
         m[i] = m[len(m)-1 - i]
         m[len(m)-1 - i] = tmp
+
 
 def tobyte(a: int):
     return bytearray(a.to_bytes(64, 'big'))
@@ -37,7 +39,6 @@ nonlinear_inv = [0 for i in range(256)]
 def Prcompute_nonlinear_inverse():
     for i in range(256):
         nonlinear_inv[nonlinear[i]] = i
-    
 
 
 precomputed_LS = [[0 for i in range(256)] for j in range(16)]
@@ -84,24 +85,24 @@ def l_transformation(v):
     tmp ^= GauloisMult(operand[6], v[teration + 8])
     return tmp
 
-def R_transformation( v):
-    
+
+def R_transformation(v):
+
     tmp = l_transformation(v)
     for i in range(15):
         v[i] = v[i + 1]
 
     v[15] = tmp
 
-def R_transformation_inv( v):
-    
+
+def R_transformation_inv(v):
+
     tmp = v[15]
-    for i in range(14,-1, -1):
+    for i in range(14, -1, -1):
         v[i+1] = v[i]
     v[0] = tmp
-    
-    v[0] = l_transformation(v)
-    
 
+    v[0] = l_transformation(v)
 
 
 def Precompute_LS():
@@ -118,13 +119,10 @@ def Precompute_LS():
                 v[i + 16] = 0
             v[pos] = nonlinear[x]
             precomputed_LS[pos][x] = Linear_array(v)
-            
-
 
 
 def Precompute_LS_inv():
     v = [0 for _ in range(16)]
-
 
     for pos in range(16):
         for x in range(256):
@@ -135,8 +133,8 @@ def Precompute_LS_inv():
             tmp = int.from_bytes(v, 'little')
             tmp = Linear_inverse(tmp)
 
-            
             precomputed_L_inv[pos][x] = tmp
+
 
 def Linear(tmp):
     vv = tmp.to_bytes(16, 'little')
@@ -195,7 +193,7 @@ def Linear_array(v):
         res += q * v[16 + i]
         q *= 256
     return res
-    
+
 
 def Linear_inverse(tmp):
     vv = tmp.to_bytes(16, 'little')
@@ -214,18 +212,20 @@ def Linear_inverse(tmp):
         q *= 256
     return res
 
+
 def S_inverse(tmp):
     vv = tmp.to_bytes(16, 'little')
     v = bytearray(16)
-    
+
     for pos in range(16):
-        v[pos] = nonlinear_inv[ vv[pos]]
+        v[pos] = nonlinear_inv[vv[pos]]
     res = 0
     q = 1
     for i in range(16):
         res += q * v[i]
         q *= 256
     return res
+
 
 def LS_inverse(tmp):
     return S_inverse(Linear_inverse(tmp))
@@ -293,7 +293,6 @@ def Decode(input: bytearray):
 
     for i in range(9):
         tmp = m
-        
         v = tmp.to_bytes(16, 'little')
         tmp = precomputed_L_inv[0][v[0]] ^ precomputed_L_inv[1][v[1]] ^ precomputed_L_inv[2][v[2]] ^ \
             precomputed_L_inv[3][v[3]] ^ precomputed_L_inv[4][v[4]] ^ precomputed_L_inv[5][v[5]] ^ \
@@ -302,43 +301,30 @@ def Decode(input: bytearray):
             precomputed_L_inv[12][v[12]] ^ precomputed_L_inv[13][v[13]] ^ precomputed_L_inv[14][v[14]] ^ \
             precomputed_L_inv[15][v[15]]
         tmp = S_inverse(tmp)
-        tmp^= kkey[8 - i ]
+        tmp ^= kkey[8 - i]
         m = tmp
-        
-    return m.to_bytes(16, 'big')
 
-def Decode1(input: bytearray):
-    m = int.from_bytes(input, 'big')
-    m ^= kkey[9]
-
-    for i in range(9):
-        tmp = m
-        
-        tmp = Linear_inverse(tmp)
-        
-        
-        tmp = S_inverse(tmp)
-        
-        
-        tmp^= kkey[8 - i]
-        m = tmp
     return m.to_bytes(16, 'big')
 
 
 class Kuznechik:
-    def __init__(self, key) -> None:
+    def __init__(self, key, byteorder='big') -> None:
         self.K = key
         self.n = 128
+        self.byteorder = byteorder
         self.UnpackKey(key)
 
     def UnpackKey(self, key):
-
         self.key = [0 for j in range(10)]
-        self.key[0] = int.from_bytes(key[:16], 'big')
-        self.key[1] = int.from_bytes(key[16:], 'big')
+
+        if self.byteorder == 'big':
+            self.key[0] = int.from_bytes(key[:16], 'big')
+            self.key[1] = int.from_bytes(key[16:], 'big')
+        else:
+            self.key[0] = int.from_bytes(key[16:], 'little')
+            self.key[1] = int.from_bytes(key[:16], 'little')
 
         for i in range(1, 5):
-
             self.key[2 * i] = self.key[2 * i - 2]
             self.key[2 * i + 1] = self.key[2 * i - 1]
             for j in range(8):
@@ -353,9 +339,8 @@ class Kuznechik:
                 self.key[2*i + 1] = self.key[2*i]
                 self.key[2*i] = tmp
 
-
-    def Encode(self,input: bytearray):
-        m = int.from_bytes(input, 'big')
+    def Encode(self, input: bytearray):
+        m = int.from_bytes(input, self.byteorder)
         m ^= self.key[0]
 
         for i in range(9):
@@ -366,16 +351,15 @@ class Kuznechik:
                 precomputed_LS[9][v[9]] ^ precomputed_LS[10][v[10]] ^ precomputed_LS[11][v[11]] ^ \
                 precomputed_LS[12][v[12]] ^ precomputed_LS[13][v[13]] ^ precomputed_LS[14][v[14]] ^ \
                 precomputed_LS[15][v[15]] ^ self.key[i + 1]
-            
-        return m.to_bytes(16, 'big')
-    
-    def Decode(self,input: bytearray):
-        m = int.from_bytes(input, 'big')
+
+        return bytearray(m.to_bytes(16, self.byteorder))
+
+    def Decode(self, input: bytearray):
+        m = int.from_bytes(input, self.byteorder)
         m ^= self.key[9]
 
         for i in range(9):
             tmp = m
-            
             v = tmp.to_bytes(16, 'little')
             tmp = precomputed_L_inv[0][v[0]] ^ precomputed_L_inv[1][v[1]] ^ precomputed_L_inv[2][v[2]] ^ \
                 precomputed_L_inv[3][v[3]] ^ precomputed_L_inv[4][v[4]] ^ precomputed_L_inv[5][v[5]] ^ \
@@ -384,17 +368,17 @@ class Kuznechik:
                 precomputed_L_inv[12][v[12]] ^ precomputed_L_inv[13][v[13]] ^ precomputed_L_inv[14][v[14]] ^ \
                 precomputed_L_inv[15][v[15]]
             tmp = S_inverse(tmp)
-            tmp^= self.key[8 - i ]
+            tmp ^= self.key[8 - i]
             m = tmp
-            
-        return m.to_bytes(16, 'big')
-    
+
+        return bytearray(m.to_bytes(16, self.byteorder))
+
     def __lshift__(self, other):
         return self.Encode(other)
 
-
     def __rshift__(self, other):
         return self.Decode(other)
+
 
 Prcompute_nonlinear_inverse()
 Precompute_LS()
@@ -404,23 +388,16 @@ if __name__ == "__main__":
 
     UnpackKey()
 
-
-
-    for i in kkey:
-        prin(i)
-
     input = bytearray.fromhex('1122334455667700ffeeddccbbaa9988')
 
-    mykey = bytearray.fromhex('8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef')
+    mykey = bytearray.fromhex(
+        '8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef')
 
     kuz = Kuznechik(mykey)
-
 
     res = Encode(input)
 
     res2 = kuz << input
-
-
 
     print(binascii.hexlify(res))
     print(binascii.hexlify(res2))
@@ -431,33 +408,59 @@ if __name__ == "__main__":
     print(binascii.hexlify(res3))
     print(binascii.hexlify(res4))
 
-
     start = time.time()
-
 
     for i in range(65536):
         input = kuz << input
 
-    print("decode time: ",time.time() - start)
+    print("decode time: ", time.time() - start)
 
     start = time.time()
-
 
     for i in range(65536):
         input = kuz >> input
 
-    print("encode time: ",time.time() - start)
-
+    print("encode time: ", time.time() - start)
 
     key = '8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef'
 
     m = '1234567890abcef00000000000000000'
 
     mykey = bytearray.fromhex(key)
+    mymessage = bytearray.fromhex(m)
 
     kuz = Kuznechik(mykey)
-    m = bytearray.fromhex(m)
-    print(mykey.hex())
-    print(m.hex())
-    res = kuz << m
-    print(res.hex())
+    res = kuz << mymessage
+    print(binascii.hexlify(res))
+
+    key = '8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef'
+
+    m = '1122334455667700ffeeddccbbaa9988'
+
+    mykey = bytearray.fromhex(key)
+    mymessage = bytearray.fromhex(m)
+
+    kuz = Kuznechik(mykey)
+    res = kuz << mymessage
+    print(binascii.hexlify(res))
+
+    reverse(mykey)
+    reverse(mymessage)
+
+    kuz = Kuznechik(mykey, 'little')
+
+    for i in kuz.key:
+        prin(i)
+    res2 = kuz << mymessage
+
+    res3 = kuz >> res2
+
+    print(binascii.hexlify(res2))
+
+    reverse(res2)
+
+    print(binascii.hexlify(res2))
+    print(binascii.hexlify(res))
+
+    print(binascii.hexlify(res3))
+    print(binascii.hexlify(mymessage))
