@@ -8,6 +8,7 @@ class WeierstrassCurve(object):
         - p: prime number
         """
         assert p > 2
+        self.n = (p.bit_length() + 7) // 8
         self.F = Zp(p)
         assert isinstance(a, self.F.Element)
         assert isinstance(b, self.F.Element)
@@ -104,6 +105,7 @@ def main():
     p256 = WeierstrassCurve(p, a, b, m)
     print(p256.F.p)
     print(p256.m)
+    print(p256.n)
     G = p256(F[0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296],
              F[0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5])
     # source: http://point-at-infinity.org/ecc/nisttv
