@@ -19,7 +19,7 @@ class CtrAcpkm(object):
         self.s = s // 8
         self.n = block_cipher.n // 8
 
-    def encode(self, IV: bytearray, message: bytearray):
+    def encode(self, IV: bytearray, message: bytearray) -> bytearray:
         assert len(IV) == self.n // 2
         m = len(message)
         l = math.ceil(m / self.N)
