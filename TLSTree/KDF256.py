@@ -18,6 +18,9 @@ class KDF256:
     def __init__(self, key: bytearray):
         self.hmac = HMAC(key, 256)
 
+    def change_key(self, key: bytearray):
+        self.hmac.change_key(key)
+
     def __call__(self, label: bytearray, seed: bytearray):
         message = bytearray(0)
         message.extend([1])
@@ -49,4 +52,3 @@ if __name__ == "__main__":
 
     res = kdf(my_label, my_seed)
     print(binascii.hexlify(res))
-
