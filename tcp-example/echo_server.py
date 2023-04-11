@@ -29,7 +29,7 @@ def exception_guard(message_on_exit: str = 'exit'):
 async def handle_echo(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     buf_size = 64 * 1024
     peer = writer.get_extra_info('peername')
-    with ExceptionGuard(f'exit client handler for peer {peer}'):
+    with exception_guard(f'exit client handler for peer {peer}'):
         while True:
             data = await reader.read(buf_size)
             if not data:
