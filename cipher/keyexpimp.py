@@ -1,7 +1,6 @@
 from omac import OMAC
 from Kuznechik import Kuznechik
 from ctr import Ctr
-import binascii
 
 
 class KExpImp15(object):
@@ -21,7 +20,6 @@ class KExpImp15(object):
         assert len(self.IV) == self.n // 2
 
     def exp(self, K):
-        print(binascii.hexlify(self.IV + K))
         keymac = self.omac.mac(self.IV + K)
         kexp = self.ctr.encode(self.IV, K + keymac)
         return kexp
@@ -56,6 +54,5 @@ if __name__ == "__main__":
     """)
     kexpimp = KExpImp15(KExpMac, KExpEnc, IV)
     kexp = kexpimp.exp(K)
-    assert K == kexpimp.imp(kexp)
-    # assert KExp == kexpimp.exp(K)
-    # assert K == kexpimp.imp(KExp)
+    assert KExp == kexpimp.exp(K)
+    assert K == kexpimp.imp(KExp)

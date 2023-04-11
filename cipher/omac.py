@@ -42,7 +42,7 @@ class OMAC(object):
         p = message[self.n * (q - 1):]
         k = self.K1 if len(p) == self.n else self.K2
         if len(p) < self.n:
-            p += (1 << (8 * (self.n - len(p) - 1))).to_bytes(self.n - len(p), byteorder='big')
+            p += (1 << (8 * (self.n - len(p)) - 1)).to_bytes(self.n - len(p), byteorder='big')
         return self.block_cipher.Encode(xor(p, xor(c, k)))[:self.s]
 
 
