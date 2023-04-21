@@ -60,10 +60,12 @@ def get_const_token(patternstream: io.StringIO):
 def get_name_token(patternstream: io.StringIO):
     res = ''
     while True:
-        res += patternstream.read(1)
-        if len(res) == 0:
+
+        extra = patternstream.read(1)
+        if len(extra) == 0:
             return res
-        if not res[-1].isalnum():
+        res += extra
+        if not res[-1].isalnum() and  res[-1] != '_':
             patternstream.seek(patternstream.tell()-1)
             return res[:-1]
 

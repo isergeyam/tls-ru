@@ -4,6 +4,7 @@ from error import *
 from utils import *
 
 import io
+import binascii
 
 
 class Result:
@@ -35,12 +36,16 @@ def bytes_reader(size: int):
 
 
 def array_reader(size: int, type_reader):
+    if type_reader is None:
+        error_unknown_type()
+
     def reader(buffer: io.BytesIO):
 
         array_size = get_int(buffer, size)
         start = buffer.tell()
         res = []
         while start + array_size != buffer.tell():
+            current = buffer.tell()
             res.append(type_reader(buffer))
             if start + array_size < buffer.tell():
                 error_incorrect_length_array()
@@ -60,6 +65,16 @@ def dict_reader(size: int, keys, type_readers):
         if start + dict_size != buffer.tell():
             error_incorrect_length_array()
         return Result('dict', res, size, dict_size)
+    return reader
+
+
+def fdict_reader(keys, type_readers):
+    def reader(buffer: io.BytesIO):
+        res = {}
+        length = len(keys)
+        for i in range(length):
+            res[keys[i]] = type_readers[i](buffer)
+        return Result('fdict', res, 0, 0)
     return reader
 
 
@@ -95,6 +110,8 @@ class Parser:
             return self.get_array_reader(patternstream)
         if type == 'dict':
             return self.get_dict_reader(patternstream)
+        if type == 'fdict':
+            return self.get_fdict_reader(patternstream)
         if type == 'variant':
             return self.get_variant_reader(patternstream)
 
@@ -148,6 +165,28 @@ class Parser:
 
         return dict_reader(size, keys, type_readers)
 
+    def get_fdict_reader(self,   patternstream: io.StringIO):
+        get_token_with_type(patternstream, TokenType.left_bracket)
+        keys = []
+        type_readers = []
+        first = True
+        while (True):
+            if not first:
+                token = Token(patternstream)
+                if token.type == TokenType.right_bracket:
+                    break
+                if token.type != TokenType.comma:
+                    error_unexpected_token()
+            else:
+                first = False
+            token = get_token_with_type(patternstream, TokenType.name)
+            keys.append(token.value)
+            get_token_with_type(patternstream, TokenType.comma)
+            token = get_token_with_type(patternstream, TokenType.name)
+            type_readers.append(self.get_reader(token.value, patternstream))
+
+        return fdict_reader(keys, type_readers)
+
     def get_variant_reader(self, patternstream: io.StringIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         type_readers = {}
@@ -165,7 +204,7 @@ class Parser:
             token = get_token_with_type(patternstream, TokenType.name)
             type_readers[type] = self.get_reader(token.value, patternstream)
         return variant_reader(size, type_readers)
-    
+
     def remember(self, type, pattern):
         self.types[type] = self.parse(io.StringIO(pattern))
 
@@ -265,7 +304,6 @@ def test_array_of_fbytes():
 def test_dict():
     parser = Parser()
 
-
     parser.remember("a", "bytes(1)")
     parser.remember("b", "fbytes(1)")
 
@@ -278,6 +316,7 @@ def test_dict():
     reader = parser.parse(mypytternstream)
 
     print(reader(mybufferstream))
+
 
 def test_allias():
     parser = Parser()
@@ -305,6 +344,7 @@ def test_allias():
 
     print(reader(mybufferstream))
 
+
 def test_variant():
     parser = Parser()
 
@@ -323,6 +363,129 @@ def test_variant():
     print(reader(mybufferstream))
 
 
+def test_handshake():
+    parser = Parser()
+
+    # Version
+
+    parser.remember("ProtocolVersion",
+                    "fdict(major, fbytes(1), minor, fbytes(1))")
+
+    # Random
+
+    parser.remember("Random", "fbytes(32)")
+
+    # SesionID
+
+    parser.remember("SessionID", "bytes(1)")
+
+    # CipherSuites
+
+    parser.remember("CipherSuite", "fbytes(2)")
+    parser.remember("CipherSuites", "array(2, CipherSuite)")
+
+    # CompressionMethods
+
+    parser.remember("CompressionMethod", "fbytes(1)")
+    parser.remember("CompressionMethods", "array(1, CompressionMethod)")
+
+    # Extension
+    parser.remember("HashAlgorithm", "fbytes(1)")
+    parser.remember("SignatureAlgorithm", "fbytes(1)")
+    parser.remember("SignatureAndHashAlgorithm",
+                    "fdict(hash, HashAlgorithm, signature, SignatureAlgorithm)")
+    parser.remember("Signature_algorithms",
+                    "array(2, SignatureAndHashAlgorithm)")
+    parser.remember("Extended_master_secret", "bytes(2)")
+
+    parser.remember("renegotiated_connection", "bytes(1)")
+
+    parser.remember("RenegotiationInfo", "array(2, renegotiated_connection)")
+
+    parser.remember(
+        "Extension", "variant(2, 13, Signature_algorithms, 23, Extended_master_secret, 65281, RenegotiationInfo)")
+
+    parser.remember("CliendHelloBody",
+                    """
+                    dict(3, 
+                    client_version, ProtocolVersion,
+                    random, Random,
+                    session_id, SessionID,
+                    cipher_suites, array(2, CipherSuite),
+                    compression_methods, array(1, CompressionMethod),
+                    extensions, array(2, Extension)
+                    )""")
+
+    parser.remember("ServerHelloBody",
+                    """
+                    dict(3, 
+                    server_version, ProtocolVersion,
+                    random, Random,
+                    session_id, SessionID,
+                    cipher_suite, CipherSuite,
+                    compression_method,  CompressionMethod,
+                    extensions, array(2, Extension)
+                    )""")
+
+    parser.remember("Handshake", """variant(1,
+                    0, fbytes(0),
+                    1, CliendHelloBody,
+                    2, ServerHelloBody
+                    )""")
+
+    mypattern = "Handshake"
+    mypytternstream = io.StringIO(mypattern)
+
+    reader = parser.parse(mypytternstream)
+
+    mybuffer = bytearray.fromhex(
+        """
+        01 00 00 40 03 03 93 3E A2 1E C3 80 2A 56 15 50
+        EC 78 D6 ED 51 AC 24 39 D7 E7 49 C3 1B C3 A3 45
+        61 65 88 96 84 CA 00 00 04 FF 88 FF 89 01 00 00
+        13 00 0D 00 06 00 04 EE EE EF EF FF 01 00 01 00
+        00 17 00 00
+        """)
+    mybufferstream = io.BytesIO(mybuffer)
+    res = reader(mybufferstream)
+    print(res)
+    print("handshake type:", res.variant_type)
+    print("version major :", res.value.value["client_version"].value["major"].value)
+    print("version minor :", res.value.value["client_version"].value["minor"].value)
+    print("random :", binascii.hexlify( res.value.value["random"].value))
+    print("sessionID :", binascii.hexlify( res.value.value["session_id"].value))
+    for ciphersuite in  res.value.value["cipher_suites"].value:
+        print("ciphersuite : ",  binascii.hexlify(ciphersuite.value))
+
+    for ciphersuite in  res.value.value["compression_methods"].value:
+        print("compression_method : ",  binascii.hexlify(ciphersuite.value))
+
+    for ciphersuite in  res.value.value["extensions"].value:
+        print("extension type :", ciphersuite.variant_type )
+        print("extensions : ",  ciphersuite.value)
+
+    mybuffer = bytearray.fromhex(
+        """
+        02 00 00 41 03 03 93 3E A2 1E 49 C3 1B C3 A3 45
+        61 65 88 96 84 CA A5 57 6C E7 92 4A 24 F5 81 13
+        80 8D BD 9E F8 56 10 C3 80 2A 56 15 50 EC 78 D6
+        ED 51 AC 24 39 D7 E7 FF 88 00 00 09 FF 01 00 01
+        00 00 17 00 00
+        """)
+    
+    mybufferstream = io.BytesIO(mybuffer)
+    res = reader(mybufferstream)
+    print(res)
+    print("handshake type:", res.variant_type)
+    print("version major :", res.value.value["server_version"].value["major"].value)
+    print("version minor :", res.value.value["server_version"].value["minor"].value)
+    print("random :", binascii.hexlify( res.value.value["random"].value))
+    print("sessionID :", binascii.hexlify( res.value.value["session_id"].value))
+    print("ciphersuite : ",  binascii.hexlify(res.value.value["cipher_suite"].value))
+    print("compression_method : ",  binascii.hexlify(res.value.value["compression_method"].value))
+    for ciphersuite in  res.value.value["extensions"].value:
+        print("extension type :", ciphersuite.variant_type )
+        print("extensions : ",  ciphersuite.value)
 
 
 if __name__ == "__main__":
@@ -333,5 +496,4 @@ if __name__ == "__main__":
     test_dict()
     test_allias()
     test_variant()
-
-    
+    test_handshake()
