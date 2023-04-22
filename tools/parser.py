@@ -1,5 +1,7 @@
 from mytoken import Token, TokenType, get_token_with_type
 
+from collections import OrderedDict
+
 from error import *
 from utils import *
 
@@ -12,7 +14,7 @@ class Result:
         self.type = type
         self.value = value
         self.size = size
-        self.value_sie = value_size
+        self.value_size = value_size
         self.variant_type = variant_type
 
     def __str__(self) -> str:
@@ -20,6 +22,66 @@ class Result:
 
     def __repr__(self):
         return "Result type: " + self.type + " value: " + str(self.value)
+
+    def __getitem__(self, key):
+        return self.value[key]
+
+    def update_size(self):
+        if self.type == "fbytes":
+            self.value_size = len(self.value)
+            return self.value_size
+        if self.type == "bytes":
+            self.value_size = len(self.value)
+            return self.value_size + self.size
+        if self.type == "array":
+            self.value_size = 0
+            for item in self.value:
+                self.value_size += item.update_size()
+            return self.value_size + self.size
+        if self.type == "fdict":
+            self.value_size = 0
+            for item in self.value:
+                self.value_size += self.value[item].update_size()
+            return self.value_size
+        if self.type == "dict":
+            self.value_size = 0
+            for item in self.value:
+                self.value_size += self.value[item].update_size()
+            return self.value_size + self.size
+        if self.type == "variant":
+            self.value_size = self.value.update_size()
+            return self.value_size + self.size
+        error_unknown_type()
+
+    def write(self, writer):
+        self.update_size()
+        self.to_bytes(writer)
+
+    def get_full_size(self):
+        if self.type == "fbytes" or self.variant_type == "fdict":
+            return self.value_size
+        return self.value_size + self.size
+
+    def to_bytes(self, writer):
+        if self.type == "fbytes":
+            writer.write(self.value)
+        if self.type == "bytes":
+            writer.write(get_bytes_from_int(self.value_size, self.size))
+            writer.write(self.value)
+        if self.type == "fdict":
+            for entry in self.value:
+                self.value[entry].to_bytes(writer)
+        if self.type == "dict":
+            writer.write(get_bytes_from_int(self.value_size, self.size))
+            for entry in self.value:
+                self.value[entry].to_bytes(writer)
+        if self.type == "array":
+            writer.write(get_bytes_from_int(self.value_size, self.size))
+            for entry in self.value:
+                entry.to_bytes(writer)
+        if self.type == "variant":
+            writer.write(get_bytes_from_int(self.variant_type, self.size))
+            self.value.to_bytes(writer)
 
 
 def fbytes_reader(size: int):
@@ -45,7 +107,6 @@ def array_reader(size: int, type_reader):
         start = buffer.tell()
         res = []
         while start + array_size != buffer.tell():
-            current = buffer.tell()
             res.append(type_reader(buffer))
             if start + array_size < buffer.tell():
                 error_incorrect_length_array()
@@ -58,7 +119,7 @@ def dict_reader(size: int, keys, type_readers):
     def reader(buffer: io.BytesIO):
         dict_size = get_int(buffer, size)
         start = buffer.tell()
-        res = {}
+        res = OrderedDict()
         length = len(keys)
         for i in range(length):
             res[keys[i]] = type_readers[i](buffer)
@@ -450,19 +511,30 @@ def test_handshake():
     res = reader(mybufferstream)
     print(res)
     print("handshake type:", res.variant_type)
-    print("version major :", res.value.value["client_version"].value["major"].value)
-    print("version minor :", res.value.value["client_version"].value["minor"].value)
-    print("random :", binascii.hexlify( res.value.value["random"].value))
-    print("sessionID :", binascii.hexlify( res.value.value["session_id"].value))
-    for ciphersuite in  res.value.value["cipher_suites"].value:
+    print("version major :", res["client_version"]["major"].value)
+    print("version minor :", res["client_version"]["minor"].value)
+    print("random :", binascii.hexlify(res["random"].value))
+    print("sessionID :", binascii.hexlify(res["session_id"].value))
+    for ciphersuite in res["cipher_suites"]:
         print("ciphersuite : ",  binascii.hexlify(ciphersuite.value))
 
-    for ciphersuite in  res.value.value["compression_methods"].value:
+    print(res["cipher_suites"][0].value)
+
+    for ciphersuite in res["compression_methods"]:
         print("compression_method : ",  binascii.hexlify(ciphersuite.value))
 
-    for ciphersuite in  res.value.value["extensions"].value:
-        print("extension type :", ciphersuite.variant_type )
+    for ciphersuite in res["extensions"]:
+        print("extension type :", ciphersuite.variant_type)
         print("extensions : ",  ciphersuite.value)
+
+    print(res.update_size())
+
+    buf = io.BytesIO()
+
+    print(res.write(buf))
+    buf.seek(0)
+    print(binascii.hexlify(buf.read(res.get_full_size())))
+    print(binascii.hexlify(mybuffer))
 
     mybuffer = bytearray.fromhex(
         """
@@ -472,20 +544,31 @@ def test_handshake():
         ED 51 AC 24 39 D7 E7 FF 88 00 00 09 FF 01 00 01
         00 00 17 00 00
         """)
-    
+
     mybufferstream = io.BytesIO(mybuffer)
     res = reader(mybufferstream)
     print(res)
     print("handshake type:", res.variant_type)
-    print("version major :", res.value.value["server_version"].value["major"].value)
-    print("version minor :", res.value.value["server_version"].value["minor"].value)
-    print("random :", binascii.hexlify( res.value.value["random"].value))
-    print("sessionID :", binascii.hexlify( res.value.value["session_id"].value))
-    print("ciphersuite : ",  binascii.hexlify(res.value.value["cipher_suite"].value))
-    print("compression_method : ",  binascii.hexlify(res.value.value["compression_method"].value))
-    for ciphersuite in  res.value.value["extensions"].value:
-        print("extension type :", ciphersuite.variant_type )
+    print("version major :", res["server_version"]["major"].value)
+    print("version minor :", res["server_version"]["minor"].value)
+    print("random :", binascii.hexlify(res["random"].value))
+    print("sessionID :", binascii.hexlify(res["session_id"].value))
+    print("ciphersuite : ",  binascii.hexlify(res["cipher_suite"].value))
+    print("compression_method : ",  binascii.hexlify(
+        res["compression_method"].value))
+    for ciphersuite in res["extensions"]:
+        print("extension type :", ciphersuite.variant_type)
         print("extensions : ",  ciphersuite.value)
+
+    print(res.update_size())
+
+    buf = io.BytesIO()
+
+    print(res.write(buf))
+    buf.seek(0)
+
+    print(binascii.hexlify(buf.read(res.get_full_size())))
+    print(binascii.hexlify(mybuffer))
 
 
 if __name__ == "__main__":

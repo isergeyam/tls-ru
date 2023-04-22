@@ -34,3 +34,7 @@ def get_bytes(input: io.BytesIO, size):
 
 def get_int(input: io.BytesIO, size):
     return int.from_bytes(get_bytes(input, size), 'big')
+
+def get_bytes_from_int(value: int, size):
+    return value.to_bytes(size, 'big')
+
