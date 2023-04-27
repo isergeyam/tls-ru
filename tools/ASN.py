@@ -51,13 +51,14 @@ def parse_ASN(buffer: io.BytesIO):
             return Result("ASN_Sequence", values, 0, 0)
         else:
             return Result("ASN_Set", values, 0, 0)
-
     if type >= 160:
         start = buffer.tell()
         value = parse_ASN(buffer)
         if start + length != buffer.tell():
             error_incorrect_length_ASN_content_specific()
         return Result("ASN_Context_Specific", value, 0, 0, variant_type=type - 160)
+    
+    return Result("ASN_Unknown", get_bytes(buffer, len), 0, 0, variant_type=type)
 
 
 def test_INT():

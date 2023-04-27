@@ -10,7 +10,6 @@ class Result:
         self.size = size
         self.value_size = value_size
         self.variant_type = variant_type
-        
 
     def to_printable_string(self, offset=""):
         if self.type == "ASN_BOOL":
@@ -22,11 +21,11 @@ class Result:
         if self.type == "ASN_OCTET_STRING":
             return offset + "ASN_OCTET_STRING size " + str(self.size) + " value size " + str(self.value_size) + " with value : " + str(hexlify(self.value))
         if self.type == "ASN_OBJECT_IDENTIFIER":
-            return offset + "ASN_OBJECT_IDENTIFIER size " + str(self.size) + " value size " + str(self.value_size) + " with value : " + str(parse_object_identifier(self.value))
+            return offset + "ASN_OBJECT_IDENTIFIER size " + str(self.size) + " value size " + str(self.value_size) + " with value : " + str(decode_OID(self.value))
         if self.type == "ASN_PRINTABLE_STRING":
             return offset + "ASN_PRINTABLE_STRING size " + str(self.size) + " value size " + str(self.value_size) + " with value : \"" + str(self.value.decode()) + "\""
         if self.type == "ASN_IA5String":
-            return offset + "ASN_IA5String size " + str(self.size) + " value size " + str(self.value_size) + " with value : \"" + str(self.value.decode()) + "\""        
+            return offset + "ASN_IA5String size " + str(self.size) + " value size " + str(self.value_size) + " with value : \"" + str(self.value.decode()) + "\""
         if self.type == "ASN_UTCTIME":
             return offset + "ASN_UTCTIME size " + str(self.size) + " value size " + str(self.value_size) + " with value : \"" + str(self.value.decode()) + "\""
         if self.type == "ASN_GeneralizedTime":
@@ -49,6 +48,8 @@ class Result:
                 string += "\n"
                 string += item.to_printable_string(offset + "  ")
             return string
+        if self.type == "ASN_Unknown":
+            return offset + "ASN_IA5String size " + str(self.size) + " with type " + str(self.type) +" value size " + str(self.value_size) + " with value : \"" + str(self.value.decode()) + "\""
         if self.type == "fbytes":
             return offset + "fbytes with value :" + str(hexlify(self.value))
         if self.type == "bytes":
@@ -122,7 +123,7 @@ class Result:
             self.value_size = get_int_size(self.value)
             self.size = get_length_size(self.value_size)
             return 1 + self.value_size + self.size
-        if self.type == "ASN_BIT_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OBJECT_IDENTIFIER" or self.type == "ASN_PRINTABLE_STRING" or self.type == "ASN_UTCTIME" or self.type == "ASN_GeneralizedTime" or self.type == "ASN_IA5String":
+        if self.type == "ASN_BIT_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OBJECT_IDENTIFIER" or self.type == "ASN_PRINTABLE_STRING" or self.type == "ASN_UTCTIME" or self.type == "ASN_GeneralizedTime" or self.type == "ASN_IA5String" or self.type == "ASN_Unknown":
             self.value_size = len(self.value)
             self.size = get_length_size(self.value_size)
             return 1 + self.value_size + self.size
@@ -175,14 +176,15 @@ class Result:
             writer.write(get_bytes_from_int(1, 1))
             writer.write(get_bytes_from_int(1, 1))
             if self.value:
-                writer.write(get_bytes_from_int(255, 1)) 
+                writer.write(get_bytes_from_int(255, 1))
             else:
-                writer.write(get_bytes_from_int(0, 1)) 
+                writer.write(get_bytes_from_int(0, 1))
         if self.type == "ASN_INT":
             writer.write(get_bytes_from_int(2, 1))
             writer.write(encode_length(self.value_size, self.size))
-            writer.write(bytearray(self.value.to_bytes( self.value_size,'big')))
-            
+            writer.write(
+                bytearray(self.value.to_bytes(self.value_size, 'big')))
+
         if self.type == "ASN_BIT_STRING":
             writer.write(get_bytes_from_int(3, 1))
             writer.write(encode_length(self.value_size, self.size))
@@ -212,7 +214,7 @@ class Result:
             writer.write(encode_length(self.value_size, self.size))
             writer.write(self.value)
         if self.type == "ASN_Context_Specific":
-            writer.write(get_bytes_from_int(160 +self.variant_type, 1))
+            writer.write(get_bytes_from_int(160 + self.variant_type, 1))
             writer.write(encode_length(self.value_size, self.size))
             self.value.write_(writer)
         if self.type == "ASN_Sequence":

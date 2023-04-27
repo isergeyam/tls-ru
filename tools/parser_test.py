@@ -1,6 +1,8 @@
 import unittest
 from handshakeparser import HandshakeParser
 from myparser import Parser
+from ASN import parse_ASN
+from utils import *
 import io
 
 
@@ -15,6 +17,13 @@ class TestParser(unittest.TestCase):
         res = reader(mybufferstream)
 
         self.assertEqual(res.to_bytes(), mybuffer)
+
+    def check_result_output(self, buffer, res):
+        buf = io.BytesIO()
+        res.write(buf)
+        buf.seek(0)
+        out = buf.read(res.get_full_size())
+        assert out == buffer
 
     def test_bytes(self):
 
@@ -202,6 +211,201 @@ class TestParser(unittest.TestCase):
         mybufferstream = io.BytesIO(mybuffer)
 
         self.assertEqual(reader(mybufferstream).to_bytes(), mybuffer)
+
+    def test_ASN_bool(self):
+        pass
+
+    def test_ASN_INT(self):
+        mybufferstream = new_io_bytes_from_string("02 01 02")
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_INT(2)
+        compare_result(res, expected)
+
+    def test_ASN_BITE(self):
+        mybufferstream = new_io_bytes_from_string("""03 43 00 04 40
+                    0bd86fe5d8db89668f789b4e1dba8585
+                    c5508b45ec5b59d8906ddb70e2492b7f
+                    da77ff871a10fbdf2766d293c5d164af
+                    bb3c7b973a41c885d11d70d689b4f126""")
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_BIT("""00 04 40
+                    0bd86fe5d8db89668f789b4e1dba8585
+                    c5508b45ec5b59d8906ddb70e2492b7f
+                    da77ff871a10fbdf2766d293c5d164af
+                    bb3c7b973a41c885d11d70d689b4f126""")
+
+        compare_result(res, expected)
+
+    def test_ASN_OCTET(self):
+        mybufferstream = new_io_bytes_from_string("""04 40
+                    0bd86fe5d8db89668f789b4e1dba8585
+                    c5508b45ec5b59d8906ddb70e2492b7f
+                    da77ff871a10fbdf2766d293c5d164af
+                    bb3c7b973a41c885d11d70d689b4f126""")
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_OCT("""
+                    0bd86fe5d8db89668f789b4e1dba8585
+                    c5508b45ec5b59d8906ddb70e2492b7f
+                    da77ff871a10fbdf2766d293c5d164af
+                    bb3c7b973a41c885d11d70d689b4f126""")
+        compare_result(res, expected)
+
+    def test_ASN_OID(self):
+        mybufferstream = new_io_bytes_from_string(
+            """06 08 2a 85 03 07 01 01 03 02""")
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_OID("[1.2.643.7.1.1.3.2]")
+        compare_result(res, expected)
+
+    def test_ASN_PRINTABLE(self):
+        mybufferstream = new_io_bytes_from_string(
+            """13 07 45 78 61 6d 70 6c 65""")
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_PRI("Example")
+        compare_result(res, expected)
+
+    def test_ASN_TIME(self):
+        mybufferstream = new_io_bytes_from_string(
+            """17 0d 3031303130313030303030305a
+            18 0f 32303530313233313030303030305a""")
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_UTC("010101000000Z")
+        compare_result(res, expected)
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_GT("20501231000000Z")
+        compare_result(res, expected)
+
+    def test_ASN_CS(self):
+        mybufferstream = new_io_bytes_from_string("a003020102")
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASN_CST(0, ASN_INT(2))
+        compare_result(res, expected)
+
+    def test_ASN_SEQ(self):
+
+        mybufferstream = new_io_bytes_from_string(
+            """30 03 02 01 02
+        """)
+
+        mybuffer = bytearray.fromhex("""30 03 02 01 02
+        """)
+
+        mybufferstream = io.BytesIO(mybuffer)
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASNSEQ([ASN_INT(2)])
+        compare_result(res, expected)
+        self.check_result_output(mybuffer, res)
+
+        mybuffer = bytearray.fromhex("""30 12 
+            31 10
+                30 0e
+                    06 03 55 04 03
+                    13 07 45 78 61 6d 70 6c 65
+        """)
+
+        mybufferstream = io.BytesIO(mybuffer)
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASNSEQ([ASNSEQ([ASNSEQ([ASN_OID("[2.5.4.3]"),
+                                           ASN_PRI("Example")])])])
+        compare_result(res, expected)
+
+        self.check_result_output(mybuffer, res)
+
+    def test_ASN_Cert(self):
+
+        mybuffer = bytearray.fromhex(
+            """3082012d3081dba00302010202010a300a06082a8503070101030230123110300e060355040313074578616d706c653020170d3031303130313030303030305a180f32303530313233313030303030305a30123110300e060355040313074578616d706c653066301f06082a85030701010101301306072a85030202230006082a8503070101020203430004400bd86fe5d8db89668f789b4e1dba8585c5508b45ec5b59d8906ddb70e2492b7fda77ff871a10fbdf2766d293c5d164afbb3c7b973a41c885d11d70d689b4f126a3133011300f0603551d130101ff040530030101ff300a06082a850307010103020341004d53f012fe081776507d4d9bb81f00efdb4eefd4ab83bac4bacf735173cfa81c41aa28d2f1ab148280cd9ed56feda41974053554a42767b83ad043fd39dc0493"""
+        )
+
+        mybufferstream = io.BytesIO(mybuffer)
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASNSEQ([
+            ASNSEQ([
+                ASN_CST(0, ASN_INT(2)),
+                ASN_INT(10),
+                ASNSEQ([
+                    ASN_OID("[1.2.643.7.1.1.3.2]")
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASNSEQ([
+                            ASN_OID("[2.5.4.3]"),
+                            ASN_PRI("Example")
+                        ])
+                    ])
+                ]),
+                ASNSEQ([
+                    ASN_UTC("010101000000Z"),
+                    ASN_GT("20501231000000Z")
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASNSEQ([
+                            ASN_OID("[2.5.4.3]"),
+                            ASN_PRI("Example")
+                        ])
+                    ])
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASN_OID("[1.2.643.7.1.1.1.1]"),
+                        ASNSEQ([
+                            ASN_OID("[1.2.643.2.2.35.0]"),
+                            ASN_OID("[1.2.643.7.1.1.2.2]")
+                        ])
+                    ]),
+                    ASN_BIT("""00 04 40
+                    0bd86fe5d8db89668f789b4e1dba8585
+                    c5508b45ec5b59d8906ddb70e2492b7f
+                    da77ff871a10fbdf2766d293c5d164af
+                    bb3c7b973a41c885d11d70d689b4f126""")
+                ]),
+                ASN_CST(3,
+                        ASNSEQ([
+                            ASNSEQ([
+                                ASN_OID("[2.5.29.19]"),
+                                ASN_BOOL(True),
+                                ASN_OCT("30030101ff")
+                            ])
+                        ])
+                        )
+            ]),
+            ASNSEQ([
+                ASN_OID("[1.2.643.7.1.1.3.2]")
+            ]),
+            ASN_BIT("""00
+            4d53f012fe081776507d4d9bb81f00ef
+            db4eefd4ab83bac4bacf735173cfa81c
+            41aa28d2f1ab148280cd9ed56feda419
+            74053554a42767b83ad043fd39dc0493""")
+
+        ])
+        print(res)
+        compare_result(res, expected)
+
+        self.check_result_output(mybuffer, res)
 
 
 if __name__ == '__main__':
