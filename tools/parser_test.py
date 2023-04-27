@@ -331,7 +331,7 @@ class TestParser(unittest.TestCase):
 
         self.check_result_output(mybuffer, res)
 
-    def test_ASN_Cert(self):
+    def test_ASN_Cert_Example_1(self):
 
         mybuffer = bytearray.fromhex(
             """3082012d3081dba00302010202010a300a06082a8503070101030230123110300e060355040313074578616d706c653020170d3031303130313030303030305a180f32303530313233313030303030305a30123110300e060355040313074578616d706c653066301f06082a85030701010101301306072a85030202230006082a8503070101020203430004400bd86fe5d8db89668f789b4e1dba8585c5508b45ec5b59d8906ddb70e2492b7fda77ff871a10fbdf2766d293c5d164afbb3c7b973a41c885d11d70d689b4f126a3133011300f0603551d130101ff040530030101ff300a06082a850307010103020341004d53f012fe081776507d4d9bb81f00efdb4eefd4ab83bac4bacf735173cfa81c41aa28d2f1ab148280cd9ed56feda41974053554a42767b83ad043fd39dc0493"""
@@ -402,7 +402,164 @@ class TestParser(unittest.TestCase):
             74053554a42767b83ad043fd39dc0493""")
 
         ])
-        print(res)
+        compare_result(res, expected)
+
+        self.check_result_output(mybuffer, res)
+
+    def test_ASN_Cert_Example_2(self):
+
+        mybuffer = bytearray.fromhex(
+            """308201253081d3a00302010202010a300a06082a8503070101030230123110300e060355040313074578616d706c653020170d3031303130313030303030305a180f32303530313233313030303030305a30123110300e060355040313074578616d706c65305e301706082a85030701010101300b06092a85030701020101010343000440742795d4bee884ddf2850fec03ea3faf1844e01d9da60b645093a55e26dfc39978f596cf4d4d0c6cf1d18943d94493d16b9ec0a16d512d2e127cc4691a6318e2a3133011300f0603551d130101ff040530030101ff300a06082a85030701010302034100140b4da9124b09cb0d5ce928ee874273a310129492ec0e29369e3b791248578c1d0e1da5be347c6f1b5256c7aeac200ad64ac77a6f5b3a0e097318e7ae6ee769"""
+        )
+
+        mybufferstream = io.BytesIO(mybuffer)
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASNSEQ([
+            ASNSEQ([
+                ASN_CST(0, ASN_INT(2)),
+                ASN_INT(10),
+                ASNSEQ([
+                    ASN_OID("[1.2.643.7.1.1.3.2]")
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASNSEQ([
+                            ASN_OID("[2.5.4.3]"),
+                            ASN_PRI("Example")
+                        ])
+                    ])
+                ]),
+                ASNSEQ([
+                    ASN_UTC("010101000000Z"),
+                    ASN_GT("20501231000000Z")
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASNSEQ([
+                            ASN_OID("[2.5.4.3]"),
+                            ASN_PRI("Example")
+                        ])
+                    ])
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASN_OID("[1.2.643.7.1.1.1.1]"),
+                        ASNSEQ([
+                            ASN_OID("[1.2.643.7.1.2.1.1.1]"),
+
+                        ])
+                    ]),
+                    ASN_BIT("""00 04 40
+                    742795D4BEE884DDF2850FEC03EA3FAF
+                    1844E01D9DA60B645093A55E26DFC399
+                    78F596CF4D4D0C6CF1D18943D94493D1
+                    6B9EC0A16D512D2E127CC4691A6318E2""")
+                ]),
+                ASN_CST(3,
+                        ASNSEQ([
+                            ASNSEQ([
+                                ASN_OID("[2.5.29.19]"),
+                                ASN_BOOL(True),
+                                ASN_OCT("30030101ff")
+                            ])
+                        ])
+                        )
+            ]),
+            ASNSEQ([
+                ASN_OID("[1.2.643.7.1.1.3.2]")
+            ]),
+            ASN_BIT("""00
+            140B4DA9124B09CB0D5CE928EE874273
+            A310129492EC0E29369E3B791248578C
+            1D0E1DA5BE347C6F1B5256C7AEAC200A
+            D64AC77A6F5B3A0E097318E7AE6EE769""")
+
+        ])
+        compare_result(res, expected)
+
+        self.check_result_output(mybuffer, res)
+
+    def test_ASN_Cert_Example_3(self):
+
+        mybuffer = bytearray.fromhex(
+            """308201aa30820116a00302010202010b300a06082a8503070101030330123110300e060355040313074578616d706c653020170d3031303130313030303030305a180f32303530313233313030303030305a30123110300e060355040313074578616d706c653081a0301706082a85030701010102300b06092a850307010201020003818400048180e1ef30d52c6133ddd99d1d5c41455cf7df4d8b4c925bbc69af1433d15658515add2146850c325c5b81c133be655aa8c4d440e7b98a8d59487b0c7696bcc55d11ecbe7736a9ec357ff2fd39931f4e114cb8cda359270ac7f0e7ff43d9419419ea61fd2ab77f5d9f63523d3b50a04f63e2a0cf51b7c13adc21560f0bd40cc9c737a3133011300f0603551d130101ff040530030101ff300a06082a8503070101030303818100415703d892f1a5f3f68c4353189a7ee207b80b5631ef9d49529a4d6b542c2cfa15aa2eacf11f470fde7d954856903c35fd8f955ef300d95c77534a724a0eee702f86fa60a081091a23dd795e1e3c689ee512a3c82ee0dcc2643c78eea8fcacd35492558486b20f1c9ec197c90699850260c93bcbcd9c5c3317e19344e173ae36"""
+        )
+
+        mybufferstream = io.BytesIO(mybuffer)
+
+        res = parse_ASN(mybufferstream)
+
+        expected = ASNSEQ([
+            ASNSEQ([
+                ASN_CST(0, ASN_INT(2)),
+                ASN_INT(11),
+                ASNSEQ([
+                    ASN_OID("[1.2.643.7.1.1.3.3]")
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASNSEQ([
+                            ASN_OID("[2.5.4.3]"),
+                            ASN_PRI("Example")
+                        ])
+                    ])
+                ]),
+                ASNSEQ([
+                    ASN_UTC("010101000000Z"),
+                    ASN_GT("20501231000000Z")
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASNSEQ([
+                            ASN_OID("[2.5.4.3]"),
+                            ASN_PRI("Example")
+                        ])
+                    ])
+                ]),
+                ASNSEQ([
+                    ASNSEQ([
+                        ASN_OID("[1.2.643.7.1.1.1.2]"),
+                        ASNSEQ([
+                            ASN_OID("[1.2.643.7.1.2.1.2.0]"),
+
+                        ])
+                    ]),
+                    ASN_BIT("""00 04 81 80
+                    E1EF30D52C6133DDD99D1D5C41455CF7
+                    DF4D8B4C925BBC69AF1433D15658515A
+                    DD2146850C325C5B81C133BE655AA8C4
+                    D440E7B98A8D59487B0C7696BCC55D11
+                    ECBE7736A9EC357FF2FD39931F4E114C
+                    B8CDA359270AC7F0E7FF43D9419419EA
+                    61FD2AB77F5D9F63523D3B50A04F63E2
+                    A0CF51B7C13ADC21560F0BD40CC9C737""")
+                ]),
+                ASN_CST(3,
+                        ASNSEQ([
+                            ASNSEQ([
+                                ASN_OID("[2.5.29.19]"),
+                                ASN_BOOL(True),
+                                ASN_OCT("30030101ff")
+                            ])
+                        ])
+                        )
+            ]),
+            ASNSEQ([
+                ASN_OID("[1.2.643.7.1.1.3.3]")
+            ]),
+            ASN_BIT("""00
+            415703D892F1A5F3F68C4353189A7EE2
+            07B80B5631EF9D49529A4D6B542C2CFA
+            15AA2EACF11F470FDE7D954856903C35
+            FD8F955EF300D95C77534A724A0EEE70
+            2F86FA60A081091A23DD795E1E3C689E
+            E512A3C82EE0DCC2643C78EEA8FCACD3
+            5492558486B20F1C9EC197C906998502
+            60C93BCBCD9C5C3317E19344E173AE36
+            """)
+        ])
         compare_result(res, expected)
 
         self.check_result_output(mybuffer, res)
