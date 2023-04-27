@@ -4,90 +4,13 @@ from collections import OrderedDict
 
 from error import *
 from utils import *
+from result import Result
+
+from ASN import parse_ASN
 
 import io
 import binascii
 
-
-class Result:
-    def __init__(self, type, value, size, value_size, variant_type=0):
-        self.type = type
-        self.value = value
-        self.size = size
-        self.value_size = value_size
-        self.variant_type = variant_type
-
-    def __str__(self) -> str:
-        return "Result type: " + self.type + " value: " + str(self.value)
-
-    def __repr__(self):
-        return "Result type: " + self.type + " value: " + str(self.value)
-
-    def __getitem__(self, key):
-        return self.value[key]
-
-    def update_size(self):
-        if self.type == "fbytes":
-            self.value_size = len(self.value)
-            return self.value_size
-        if self.type == "bytes":
-            self.value_size = len(self.value)
-            return self.value_size + self.size
-        if self.type == "array":
-            self.value_size = 0
-            for item in self.value:
-                self.value_size += item.update_size()
-            return self.value_size + self.size
-        if self.type == "fdict":
-            self.value_size = 0
-            for item in self.value:
-                self.value_size += self.value[item].update_size()
-            return self.value_size
-        if self.type == "dict":
-            self.value_size = 0
-            for item in self.value:
-                self.value_size += self.value[item].update_size()
-            return self.value_size + self.size
-        if self.type == "variant":
-            self.value_size = self.value.update_size()
-            return self.value_size + self.size
-        error_unknown_type()
-
-    def write(self, writer):
-        self.update_size()
-        self.write_(writer)
-
-    def get_full_size(self):
-        if self.type == "fbytes" or self.variant_type == "fdict":
-            return self.value_size
-        return self.value_size + self.size
-
-    def write_(self, writer):
-        if self.type == "fbytes":
-            writer.write(self.value)
-        if self.type == "bytes":
-            writer.write(get_bytes_from_int(self.value_size, self.size))
-            writer.write(self.value)
-        if self.type == "fdict":
-            for entry in self.value:
-                self.value[entry].write_(writer)
-        if self.type == "dict":
-            writer.write(get_bytes_from_int(self.value_size, self.size))
-            for entry in self.value:
-                self.value[entry].write_(writer)
-        if self.type == "array":
-            writer.write(get_bytes_from_int(self.value_size, self.size))
-            for entry in self.value:
-                entry.write_(writer)
-        if self.type == "variant":
-            writer.write(get_bytes_from_int(self.variant_type, self.size))
-            self.value.write_(writer)
-
-    def to_bytes(self):
-        buf = io.BytesIO()
-        self.write(buf)
-        buf.seek(0)
-        return buf.read(self.get_full_size())
 
 def fbytes_reader(size: int):
     def reader(buffer: io.BytesIO):
@@ -180,6 +103,8 @@ class Parser:
             return self.get_fdict_reader(patternstream)
         if type == 'variant':
             return self.get_variant_reader(patternstream)
+        if type == 'ASN':
+            return parse_ASN
 
         if type in self.types:
             return self.types[type]
@@ -428,9 +353,19 @@ def test_variant():
     print(reader(mybufferstream))
     print(reader(mybufferstream))
 
+def test_ASN():
+    parser = Parser()
+    mypattern = "ASN"
+    mypytternstream = io.StringIO(mypattern)
 
+    mybufferstream = new_io_bytes_from_string(
+        """3082012d3081dba00302010202010a300a06082a8503070101030230123110300e060355040313074578616d706c653020170d3031303130313030303030305a180f32303530313233313030303030305a30123110300e060355040313074578616d706c653066301f06082a85030701010101301306072a85030202230006082a8503070101020203430004400bd86fe5d8db89668f789b4e1dba8585c5508b45ec5b59d8906ddb70e2492b7fda77ff871a10fbdf2766d293c5d164afbb3c7b973a41c885d11d70d689b4f126a3133011300f0603551d130101ff040530030101ff300a06082a850307010103020341004d53f012fe081776507d4d9bb81f00efdb4eefd4ab83bac4bacf735173cfa81c41aa28d2f1ab148280cd9ed56feda41974053554a42767b83ad043fd39dc0493"""
+    )
 
+    reader = parser.parse(mypytternstream)
 
+    print(reader(mybufferstream))
+    
 
 if __name__ == "__main__":
     test_array_of_bytes()
@@ -440,4 +375,5 @@ if __name__ == "__main__":
     test_dict()
     test_allias()
     test_variant()
-    
+    test_ASN()
+

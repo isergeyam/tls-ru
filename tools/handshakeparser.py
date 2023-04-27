@@ -80,12 +80,30 @@ def HandshakeParser():
                     compression_method,  CompressionMethod,
                     extensions, array(2, Extension)
                     )""")
+    
+    parser.remember("Sertificate",
+                    """
+                    dict(3,
+                    sertificate, ASN
+                    )""")
+    
+
+    parser.remember("SertificateList",
+                    """
+                    array(3, Sertificate )
+                    """)
+    
+    parser.remember("SertificateBody",
+                    """
+                    dict(3,
+                    body, SertificateList )
+                    """)
 
     parser.remember("Handshake", """variant(1,
                     0, fbytes(0),
                     1, ClientHelloBody,
                     2, ServerHelloBody,
-                    11, bytes(3)
+                    11, SertificateBody
                     )""")
 
     mypattern = "Handshake"
@@ -319,6 +337,10 @@ def test_handshake():
 
     print(res.update_size())
 
+    print(res)
+
+    
+
     buf = io.BytesIO()
 
     print(res.write(buf))
@@ -328,4 +350,4 @@ def test_handshake():
 
 if __name__ == "__main__":
     test_client_hello()
-    # test_handshake()
+    test_handshake()
