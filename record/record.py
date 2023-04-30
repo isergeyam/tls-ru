@@ -5,6 +5,8 @@ from contextlib import contextmanager
 import sys
 import typing as tp
 
+import threading
+
 
 @contextmanager
 def exception_guard(message_on_exit: str = 'exit'):
@@ -82,14 +84,28 @@ async def start_server():
         await server.serve_forever()
 
 
+async def client():
+    print("clinet")
+    while True:
+        await asyncio.sleep(1)
+        rec = Record()
+        rec.create_records(0x23, my_message)
+
+        reader, writer = await asyncio.open_connection('localhost', 8888)
+
+        rec.send_records(writer)
+        writer.close()
+
+
+def task_thread():
+    asyncio.run(start_server())
+    print("server done!")
+
+
 async def main():
-    server = asyncio.create_task(start_server())
-    rec = Record()
-    rec.create_records(0x23, my_message)
-    reader, writer = await asyncio.open_connection('localhost', 8888)
-    rec.send_records(writer)
-    writer.close()
-    await server
+    threading.Thread(target=task_thread).start()
+
+    await client()
 
 
 if __name__ == '__main__':
