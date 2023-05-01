@@ -86,7 +86,7 @@ async def start_server():
 
 async def client():
     print("clinet")
-    while True:
+    for i in range(10):
         await asyncio.sleep(1)
         rec = Record()
         rec.create_records(0x23, my_message)
@@ -106,6 +106,8 @@ async def main():
     threading.Thread(target=task_thread).start()
 
     await client()
+
+
 
 
 if __name__ == '__main__':

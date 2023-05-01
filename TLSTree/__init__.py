@@ -6,4 +6,4 @@ def newTLSTreeKuznechik(key: bytearray):
     c2_kuz = bytearray.fromhex("FFFFFFFFFFF80000")
     c3_kuz = bytearray.fromhex("FFFFFFFFFFFFFFC0")
 
-    return TLSTree.TLSTree(key, c1_kuz, c2_kuz, c3_kuz)
+    return TLSTree(key, c1_kuz, c2_kuz, c3_kuz)
