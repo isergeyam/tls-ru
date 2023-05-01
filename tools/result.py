@@ -4,7 +4,7 @@ from binascii import hexlify
 
 
 class Result:
-    def __init__(self, type, value, size, value_size, variant_type=0):
+    def __init__(self, type, value, size, value_size=0, variant_type=0):
         self.type = type
         self.value = value
         self.size = size
@@ -252,3 +252,7 @@ class Result:
 def fbyteresult(string: str):
     value = bytearray.fromhex(string)
     return Result("fbytes", value, len(value), len(value))
+
+
+def variant(v_type, size, value):
+    return Result("variant", value, size, 0, variant_type=v_type)

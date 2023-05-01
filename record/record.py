@@ -108,8 +108,6 @@ async def main():
     await client()
 
 
-
-
 if __name__ == '__main__':
     with exception_guard('shutdown server'):
         asyncio.run(main())
