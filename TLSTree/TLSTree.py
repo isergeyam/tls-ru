@@ -1,6 +1,6 @@
 import binascii
 
-from KDF256 import KDF256
+from TLSTree.KDF256 import KDF256
 
 
 class Diver:

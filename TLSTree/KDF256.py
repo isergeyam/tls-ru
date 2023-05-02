@@ -1,4 +1,4 @@
-from hmacGOST import HMAC
+from TLSTree.hmacGOST import HMAC
 import binascii
 
 

@@ -1,3 +1,4 @@
+import io
 from math import ceil
 import asyncio
 import os
@@ -93,6 +94,13 @@ class Record:
         except:
             pass
 
+    async def get_reader(self, reader: asyncio.StreamReader):
+        type = int.from_bytes(await reader.readexactly(1), 'big')
+        version = int.from_bytes(await reader.readexactly(2), 'big')
+        length = int.from_bytes(await reader.readexactly(2), 'big')
+        fragment = await reader.readexactly(length)
+        return type, io.BytesIO(fragment)
+
 
 message_len = 100 * 1024 * 1024
 my_message = os.urandom(message_len)
@@ -123,6 +131,24 @@ async def start_server():
 
     async with server:
         await server.serve_forever()
+
+
+async def client():
+    print("clinet")
+    for i in range(10):
+        await asyncio.sleep(1)
+        rec = Record()
+        rec.create_records(0x23, my_message)
+
+        reader, writer = await asyncio.open_connection('localhost', 8888)
+
+        rec.send_records(writer)
+        writer.close()
+
+
+def task_thread():
+    asyncio.run(start_server())
+    print("server done!")
 
 
 async def main():
