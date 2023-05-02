@@ -61,19 +61,26 @@ class Record:
 message_len = 100 * 1024 * 1024
 my_message = os.urandom(message_len)
 
+global server
+global server_started
+
 
 async def handle_read_records(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    global server
     rec = Record()
     message = bytearray()
     async for fragment in rec.read_records(reader):
         message += fragment
     print(f"Received {len(message)} fragment")
     assert message == my_message
-    sys.stdout.flush()
+    server.close()
 
 
 async def start_server():
+    global server
+    global server_started
     server = await asyncio.start_server(handle_read_records, 'localhost', 8888)
+    server_started.set()
 
     addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
     print(f'Serving on {addrs}')
@@ -83,7 +90,10 @@ async def start_server():
 
 
 async def main():
+    global server_started
+    server_started = asyncio.Event()
     server = asyncio.create_task(start_server())
+    await server_started.wait()
     rec = Record()
     rec.create_records(0x23, my_message)
     reader, writer = await asyncio.open_connection('localhost', 8888)
