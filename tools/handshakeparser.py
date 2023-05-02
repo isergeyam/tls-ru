@@ -103,7 +103,11 @@ def HandshakeParser():
                     0, fbytes(0),
                     1, ClientHelloBody,
                     2, ServerHelloBody,
+<<<<<<< HEAD
                     11, SertificateBody
+=======
+                    11, Certificate
+>>>>>>> 89659dd (handshake)
                     )""")
 
     mypattern = "Handshake"
@@ -149,6 +153,7 @@ def test_client_hello():
                  "major": bytes.fromhex('03'),
                  "minor": bytes.fromhex('03'),
              },
+             "random": bytes.fromhex("933EA21EC3802A561550EC78D6ED51AC2439D7E749C31BC3A3456165889684CA"),
              "session_id": b"",
              "cipher_suites": [bytes.fromhex("ff88"), bytes.fromhex("ff89")],
              "compression_methods": [bytes.fromhex("00")],
@@ -161,8 +166,56 @@ def test_client_hello():
                  Variant(0xff01, [b""]),
                  Variant(0x0017, b""),
              ]
-         }
-         )
+         })
+    compare_result(res, expected)
+
+
+def test_server_hello():
+    reader = HandshakeParser()
+
+    mybuffer = bytearray.fromhex(
+        """
+        02 00 00 41 03 03 93 3E A2 1E 49 C3 1B C3 A3 45
+        61 65 88 96 84 CA A5 57 6C E7 92 4A 24 F5 81 13
+        80 8D BD 9E F8 56 10 C3 80 2A 56 15 50 EC 78 D6
+        ED 51 AC 24 39 D7 E7 FF 88 00 00 09 FF 01 00 01
+        00 00 17 00 00
+        """)
+
+    mybufferstream = io.BytesIO(mybuffer)
+    res = reader(mybufferstream)
+    expected = Variant \
+        (2,
+         {
+             "server_version": {
+                 "major": bytes.fromhex('03'),
+                 "minor": bytes.fromhex('03'),
+             },
+             "random": bytes.fromhex("933EA21E49C31BC3A3456165889684CAA5576CE7924A24F58113808DBD9EF856"),
+             "session_id": bytes.fromhex("C3802A561550EC78D6ED51AC2439D7E7"),
+             "cipher_suite": bytes.fromhex("ff88"),
+             "compression_method": bytes.fromhex("00"),
+             "extensions": [
+                 Variant(0xff01, [b""]),
+                 Variant(0x0017, b""),
+             ]
+         })
+    compare_result(res, expected)
+
+
+def test_certificate():
+    reader = HandshakeParser()
+    cert_str = """0B0002BC0002B90002B6308202B23082  0261A003020102020A28A290E3000000  D8D142300806062A8503020203303A31  123010060A0992268993F22C64011916
+ 02727531123010060A0992268993F22C  640119160263703110300E0603550403  1307746573742D6361301E170D313731  3032343032353035365A170D32373130  32343039333035365A3021311F301D06  035504031316536572766572544C5331  325465737453616D706C657330683021  06082A85030701010101301506092A85  0307010201010106082A850307010102  020343000440FD13E320DC43F4712360  E11F8A50E0940747457212E9566E02CB  4C60E3D63EC0EC25109AE399C769496D  A48929851A8D9C47C8FA0A8EE720B7DB  A29194574D99A3820159308201553013  0603551D25040C300A06082B06010505  070301300E0603551D0F0101FF040403  0204F0301D0603551D0E04160414B090  0486FC71C5915ACA9B6B361C18A83714  351B301F0603551D230418301680149E  03F0B89CFC60DC8A181EE800DFA85B32
+ CD7376303F0603551D1F043830363034  A032A030862E687474703A2F2F766D2D  746573742D63612E63702E72752F4365  7274456E726F6C6C2F746573742D6361  2E63726C3081AC06082B060105050701  0104819F30819C304B06082B06010505  073002863F687474703A2F2F766D2D74  6573742D63612E63702E72752F436572  74456E726F6C6C2F766D2D746573742D  63612E63702E72755F746573742D6361  2E637274304D06082B06010505073002  864166696C653A2F2F5C5C766D2D7465  73742D63612E63702E72755C43657274  456E726F6C6C5C766D2D746573742D63
+ 612E63702E72755F746573742D63612E  637274300806062A8503020203034100  933050115042803B6FDD1D996A750AC8  DA2C3EF228475ED3FBC79A3EA1C7D580  AE08D081F314B48809BD2CD4B58FA84C
+ B2B66611FD6C0A84BE59253D1887CC02
+    """
+    mybuffer = bytearray.fromhex(cert_str)
+    print(len(mybuffer))
+    mybufferstream = io.BytesIO(mybuffer)
+    res = reader(mybufferstream)
+    expected = Variant(0x0B, [bytes.fromhex(cert_str[46:])])
     compare_result(res, expected)
 
 
@@ -350,4 +403,7 @@ def test_handshake():
 
 if __name__ == "__main__":
     test_client_hello()
-    test_handshake()
+    test_server_hello()
+    # test_handshake()
+    # test_certificate()
+    # test_handshake()
