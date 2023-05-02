@@ -60,8 +60,6 @@ async def client():
     if debug:
         print(res)
 
-
-
     print(get_name_from_cert(res))
 
     x, y = get_point_from_cert(res)
