@@ -1,4 +1,5 @@
 from field import Zp
+import typing as tp
 
 
 class WeierstrassCurve(object):
@@ -26,7 +27,12 @@ class WeierstrassCurve(object):
         return WeierstrassCurve.Point(self.p, self.a, self.b, x, y)
 
     class Point(object):
-        def __init__(self, p: int, a, b, x, y):
+
+        def __init__(self, p: tp.Union[int, bool], a, b, x, y):
+            if isinstance(p, bool):
+                self.zero_point = True
+                return
+
             assert p > 2
             self.p = p
             self.F = Zp(p)
@@ -38,13 +44,14 @@ class WeierstrassCurve(object):
             self.b = b
             self.x = x
             self.y = y
+            self.zero_point = False
             assert self.is_valid()
 
         def zero(self):
-            return WeierstrassCurve.Point(self.p, self.a, self.b, self.F[0], self.F[0])
+            return WeierstrassCurve.Point(True, 0, 0, 0, 0)
 
         def is_zero(self):
-            return self.x == self.F[0] and self.y == self.F[0]
+            return self.zero_point
 
         def is_valid(self):
             if self.is_zero():
@@ -71,7 +78,7 @@ class WeierstrassCurve(object):
                 return p1
             if p1.x == p2.x and (p1.y != p2.y or p1.y == self.F[0]):
                 # p1 + -p1 == 0
-                return self.zero
+                return self.zero()
             if p1.x == p2.x:
                 # p1 + p1: lamb = (3x^2+a)/2y
                 lamb = (self.F[3] * p1.x ** 2 + self.a) / (self.F[2] * p1.y)
@@ -93,6 +100,94 @@ class WeierstrassCurve(object):
                 n, cur = n >> 1, cur + cur
                 pass
             return r
+
+
+class TwistedEdwardsCurve(object):
+    def __init__(self, p: int, a, d, m):
+        """TwistedEdwards elliptic curve as: ax**2 + y**2 = 1 + dx**2y**2 in Zp
+        - a, d: Zp[p].Elements params of curve formula
+        - p: prime number
+        """
+        assert p > 2
+        self.F = Zp(p)
+        assert isinstance(a, self.F.Element)
+        assert isinstance(d, self.F.Element)
+        self.a = a
+        self.d = d
+        self.p = p
+        self.m = m
+        self.weierstrass = WeierstrassCurve(p, *self._to_weierstrass_params(), m)
+
+    def __call__(self, x, y):
+        return TwistedEdwardsCurve.Point(self.p, self.a, self.d, x, y)
+
+    def __getitem__(self, x, y):
+        return TwistedEdwardsCurve.Point(self.p, self.a, self.d, x, y)
+
+    def _to_weierstrass_params(self):
+        a = self.a
+        d = self.d
+        return self.F[-1] / self.F[48] * (a ** 2 + self.F[14] * a * d + d ** 2), \
+               self.F[1] / self.F[864] * (a + d) * (-a ** 2 + self.F[34] * a * d - d ** 2)
+
+    class Point(object):
+        def __init__(self, p: tp.Union[int, bool, WeierstrassCurve.Point], a, d, x, y):
+            if isinstance(p, bool):
+                self.point = WeierstrassCurve.Point(True, 0, 0, 0, 0)
+                return
+
+            if isinstance(p, WeierstrassCurve.Point):
+                self.point = p
+                self.a = a
+                self.d = d
+                return
+
+            self.p = p
+            self.F = Zp(p)
+            self.a = a
+            self.d = d
+            self.point = WeierstrassCurve.Point(p, *self._to_weierstrass_params(), *self._to_weierstrass(x, y))
+
+        def _to_weierstrass_params(self):
+            a = self.a
+            d = self.d
+            return self.F[-1] / self.F[48] * (a ** 2 + self.F[14] * a * d + d ** 2), \
+                   self.F[1] / self.F[864] * (a + d) * (-a ** 2 + self.F[34] * a * d - d ** 2)
+
+        def _to_weierstrass(self, x, y):
+            a = self.a
+            d = self.d
+            return (self.F[5] * a + a * y - self.F[5] * d * y - d) / (self.F[12] - self.F[12] * y), \
+                   (a + a * y - d * y - d) / (self.F[4] * x - self.F[4] * x * y)
+
+        def _to_twistededwards(self, u, v):
+            a = self.a
+            d = self.d
+            y = (self.F[5] * a - self.F[12] * u - d) / (-self.F[12] * u - a + self.F[5] * d)
+            x = (a + a * y - d * y - d) / (self.F[4] * v - self.F[4] * v * y)
+            return x, y
+
+        def zero(self):
+            return TwistedEdwardsCurve.Point(True, 0, 0, 0, 0)
+
+        def is_zero(self):
+            return self.point.is_zero()
+
+        def is_valid(self):
+            return self.point.is_valid()
+
+        def __eq__(self, other):
+            return self.point == other.point
+
+        def __neg__(self):
+            return TwistedEdwardsCurve.Point(-self.point, self.a, self.d, 0, 0)
+
+        def __add__(self, other):
+            return TwistedEdwardsCurve.Point(self.point + other.point, self.a, self.d, 0, 0)
+
+        def __mul__(self, n):
+            """p*n = p + p + ... + p"""
+            return TwistedEdwardsCurve.Point(self.point * n, self.a, self.d, 0, 0)
 
 
 def main():
@@ -117,6 +212,17 @@ def main():
     G_k = p256(F[0x1B7E046A076CC25E6D7FA5003F6729F665CC3241B5ADAB12B498CD32F2803264],
                F[0xBFEA79BE2B666B073DB69A2A241ADAB0738FE9D2DD28B5604EB8C8CF097C457B])
     assert G_k == G * k
+
+    # source: https://neuromancer.sk/std/gost/id-tc26-gost-3410-2012-512-paramSetC
+    p = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffdc7
+    F = Zp(p)
+    a = F[0x01]
+    d = F[
+        0x9e4f5d8c017d8d9f13a5cf3cdf5bfe4dab402d54198e31ebde28a0621050439ca6b39e0a515c06b304e2ce43e79e369e91a0cfc2bc2a22b4ca302dbb33ee7550]
+    m = 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc98cdba46506ab004c33a9ff5147502cc8eda9e7a769a12694623cef47f023ed
+    gost512 = TwistedEdwardsCurve(p, a, d, m)
+    G = gost512(F[0x12], F[
+        0x469af79d1fb1f5e16b99592b77a01e2a0fdfb0d01794368d9a56117f7b38669522dd4b650cf789eebf068c5d139732f0905622c04b2baae7600303ee73001a3d])
 
 
 if __name__ == '__main__':

@@ -54,11 +54,14 @@ class Zp(object):
         def __ne__(self, other):
             return self.val != other.val
 
+        def __neg__(self):
+            return Zp.Element(self.p - self.val, self.p)
+
         def __add__(self, other):
             return Zp.Element(self.val + other.val, self.p)
 
         def __sub__(self, other):
-            return Zp.Element(self.val - other.val, self.p)
+            return Zp.Element(self.val + (self.p - other.val), self.p)
 
         def __mul__(self, other):
             return Zp.Element(self.val * other.val, self.p)
