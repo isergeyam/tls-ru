@@ -146,6 +146,8 @@ def get_point_from_cert(cert):
     xy = cert["body"][0]["sertificate"][0][6][1].value
     return xy[4:68], xy[68:]
 
+def get_curve_from_cert(cert):
+    return cert["body"][0]["sertificate"][0][6][0][1][0].to_bytes()
 
 def test_a():
     res = ClientHello(bytearray().fromhex("933ea21ec3802a561550ec78d6ed51ac2439d7e749c31bc3a3456165889684ca"),

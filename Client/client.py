@@ -66,6 +66,10 @@ async def client():
     print(binascii.hexlify(x))
     print(binascii.hexlify(y))
 
+    curve = get_curve_from_cert(res)
+    print(binascii.hexlify(curve))
+    print(res["body"][0]["sertificate"][0][6][0][1][0])
+
     writer.close()
 
 
