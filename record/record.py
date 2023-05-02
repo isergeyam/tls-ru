@@ -5,6 +5,10 @@ from contextlib import contextmanager
 import sys
 import typing as tp
 
+from TLSTree import *
+from cipher import *
+from Kuznechik import Kuznechik
+
 
 @contextmanager
 def exception_guard(message_on_exit: str = 'exit'):
@@ -22,6 +26,12 @@ class Record:
         self.lengths = []
         self.fragments = []
 
+        self.cipher = False
+        self.Kmac = None
+        self.Kenc = None
+        self.IV = None
+        # по идее ключи и IV должны откуда то приходить
+
         self.TLSPlaintexts = []
         self.TLSCiphertexts = []
 
@@ -33,12 +43,38 @@ class Record:
         for i in self.fragments:
             self.lengths.append(len(i))
 
-        for i in range(len(self.fragments)):
-            self.TLSPlaintexts.append(bytearray(self.type.to_bytes(1, 'big')) +
-                                      bytearray(self.version.to_bytes(2, 'big')) +
-                                      bytearray(self.lengths[i].to_bytes(2, 'big')) +
-                                      self.fragments[i]
-                                      )
+        if not self.cipher:
+            for i in range(len(self.fragments)):
+                self.TLSPlaintexts.append(bytearray(self.type.to_bytes(1, 'big')) +
+                                          bytearray(self.version.to_bytes(2, 'big')) +
+                                          bytearray(self.lengths[i].to_bytes(2, 'big')) +
+                                          self.fragments[i]
+                                          )
+        else:
+            tree1 = newTLSTreeKuznechik(self.Kmac)
+            tree2 = newTLSTreeKuznechik(self.Kenc)
+            for i in range(len(self.fragments)):
+                MACData = (bytearray(i.to_bytes(8, 'big')) +
+                           bytearray(self.type.to_bytes(1, 'big')) +
+                           bytearray(self.version.to_bytes(2, 'big')) +
+                           bytearray(self.lengths[i].to_bytes(2, 'big')) +
+                           self.fragments[i]
+                           )
+
+                Kmac = tree1(i)
+                omac = OMAC(Kuznechik(Kmac), 128)
+                RecMac = omac.mac(MACData)
+
+                Kenc = tree2(i)
+                EncData = self.fragments[i] + RecMac
+                IV = bytearray(((int.from_bytes(self.IV, 'big') + i) % pow(2, 64)).to_bytes(8, 'big'))
+                RecEnc = CtrAcpkm(Kuznechik(Kenc), 256, 128).encode(IV, EncData)
+
+                self.TLSCiphertexts.append(bytearray(self.type.to_bytes(1, 'big')) +
+                                           bytearray(self.version.to_bytes(2, 'big')) +
+                                           bytearray(self.lengths[i].to_bytes(2, 'big')) +
+                                           RecEnc
+                                           )
 
     def send_records(self, writer: asyncio.StreamWriter):
         for record in self.TLSPlaintexts:

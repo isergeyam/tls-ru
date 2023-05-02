@@ -102,6 +102,10 @@ def HandshakeParser():
 
     parser.remember("ClientKeyExchange", "bytes(3)")
 
+    parser.remember("CertificateVerify", "dict(3, algorithm, SignatureAndHashAlgorithm, signature, bytes(2))")
+
+    parser.remember("Finished", "dict(3, verify_data, fbytes(32))")
+
     parser.remember("Handshake", """variant(1,
                     0, fbytes(0),
                     1, ClientHelloBody,
@@ -109,7 +113,9 @@ def HandshakeParser():
                     11, CertificateBody,
                     13, CertificateRequest,
                     14, ServerHelloDone,
-                    16, ClientKeyExchange
+                    15, CertificateVerify,
+                    16, ClientKeyExchange,
+                    20, Finished
                     )""")
 
     mypattern = "Handshake"
@@ -256,6 +262,47 @@ def test_client_key_exchange():
     res = reader(mybufferstream)
     expected = Variant \
         (0x10, key_exchange_data)
+    compare_result(res, expected)
+
+
+def test_certificate_verify():
+    reader = HandshakeParser()
+
+    mybuffer = bytes.fromhex("""
+    0F000044EEEE0040
+    F71F4362455BC55BA89A8FAF018288EC
+00B32717482E7624B257D9797C8FF602 7996D84627609FF8625637DFAEF4A648 C4A3517CA65E5BA3794DC5997839EF1A 
+    """)
+
+    mybufferstream = io.BytesIO(mybuffer)
+    res = reader(mybufferstream)
+    expected = Variant \
+        (0x0F, {
+            "algorithm": {"hash": bytes.fromhex("ee"), "signature": bytes.fromhex("ee")},
+            "signature": bytes.fromhex("""
+            F71F4362455BC55BA89A8FAF018288EC
+00B32717482E7624B257D9797C8FF602 7996D84627609FF8625637DFAEF4A648 C4A3517CA65E5BA3794DC5997839EF1A
+            """)
+        })
+    compare_result(res, expected)
+
+
+def test_finished():
+    reader = HandshakeParser()
+    verify_data = bytes.fromhex("""
+    2A75BE8DB1281820C3E91C3ACFB356E5
+    38BDC640DA0A81635986F3D28C391521
+    """)
+
+    mybuffer = bytes.fromhex("""
+        14000020
+        2A75BE8DB1281820C3E91C3ACFB356E5
+        38BDC640DA0A81635986F3D28C391521 
+        """)
+
+    mybufferstream = io.BytesIO(mybuffer)
+    res = reader(mybufferstream)
+    expected = Variant(0x14, {"verify_data": verify_data})
     compare_result(res, expected)
 
 
@@ -461,4 +508,6 @@ if __name__ == "__main__":
     test_certificate_request()
     test_server_hello_done()
     test_client_key_exchange()
-    # test_handshake()
+    test_certificate_verify()
+    test_finished()
+    test_handshake()
