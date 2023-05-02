@@ -1,12 +1,12 @@
-from mytoken import Token, TokenType, get_token_with_type
+from tools.mytoken import Token, TokenType, get_token_with_type
 
 from collections import OrderedDict
 
-from error import *
-from utils import *
-from result import Result
 
-from ASN import parse_ASN
+from tools.utils import *
+from tools.result import Result
+
+from tools.ASN import parse_ASN
 
 import io
 import binascii

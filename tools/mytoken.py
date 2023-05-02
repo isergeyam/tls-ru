@@ -1,9 +1,7 @@
 
 from enum import Enum
-import io
 
-from error import *
-from utils import *
+from tools.utils import *
 
 
 class TokenType(Enum):

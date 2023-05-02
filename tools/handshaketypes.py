@@ -1,7 +1,9 @@
 import binascii
 
-from result import Result, fbyteresult, variant
+from tools.result import Result, fbyteresult, variant
 from collections import OrderedDict
+
+import time
 
 
 def TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC():
@@ -87,7 +89,7 @@ def ClientHello(random, version=Version(), session_id=Sesion_id(),
                 cipher_suites=None,
                 extensions=None):
     if cipher_suites is None:
-        cipher_suites = [TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC()]
+        cipher_suites = [TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC(), TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC()]
     if extensions is None:
         extensions = [signature_algorithms(), renegotiation_info(), extended_master_secret()]
     d = OrderedDict()
@@ -134,6 +136,15 @@ def Certificate(values):
     d = OrderedDict()
     d["body"] = CertificateList(values)
     return variant(11, 1, Result("dict", d, 3))
+
+
+def get_name_from_cert(cert):
+    return cert["body"][0]["sertificate"][0][5][0][0][1].value
+
+
+def get_point_from_cert(cert):
+    xy = cert["body"][0]["sertificate"][0][6][1].value
+    return xy[4:68], xy[68:]
 
 
 def test_a():
@@ -248,6 +259,13 @@ def test_b():
     print(binascii.hexlify(mybuffer))
 
     assert mybuffer == res.to_bytes()
+
+
+def generate_random():
+    sec = int(time.time())
+    res = bytearray(sec.to_bytes(4, 'big'))
+    res.extend(bytearray(28))
+    return res
 
 
 if __name__ == "__main__":

@@ -1,7 +1,14 @@
+import binascii
+
 from record import Record
 import asyncio
 from contextlib import contextmanager
 import os
+
+from tools import HandshakeParser
+from tools.handshaketypes import *
+
+debug = False
 
 
 @contextmanager
@@ -14,19 +21,51 @@ def exception_guard(message_on_exit: str = 'exit'):
 
 
 message_len = 100 * 1024
-my_message = os.urandom(message_len)
 
 
 async def client():
     print("clinet")
     reader, writer = await asyncio.open_connection('localhost', 8888)
-    for i in range(10):
-        rec = Record()
-        rec.create_records(0x23, my_message)
+    parser = HandshakeParser()
+    rec = Record()
 
-        rec.send_records(writer)
-        response = await reader.readline()
-        print(f"Response: {response.decode().strip()}")
+    rc = generate_random()
+
+    print("random client generated\n", binascii.hexlify(rc))
+
+    clienthello = ClientHello(rc)
+
+    if debug:
+        print(clienthello)
+
+    rec.create_records(22, clienthello.to_bytes())
+
+    rec.send_records(writer)
+
+    my_type, mybuffer = await rec.get_reader(reader)
+
+    res = parser(mybuffer)
+
+    rs = res["random"].value
+
+    print("-----\nserver random\n", binascii.hexlify(rs), "\n---------")
+
+    if debug:
+        print(res)
+
+    my_type, mybuffer2 = await rec.get_reader(reader)
+
+    res = parser(mybuffer2)
+
+    if debug:
+        print(res)
+
+    print(get_name_from_cert(res))
+
+    x, y = get_point_from_cert(res)
+    print(binascii.hexlify(x))
+    print(binascii.hexlify(y))
+
     writer.close()
 
 
@@ -35,5 +74,4 @@ async def main():
 
 
 if __name__ == '__main__':
-    with exception_guard('shutdown server'):
-        asyncio.run(main())
+    asyncio.run(main())

@@ -1,4 +1,4 @@
-from myparser import Parser
+from tools.myparser import Parser
 import binascii
 import io
 from collections import namedtuple

@@ -1,5 +1,5 @@
 import io
-from error import *
+from tools.error import *
 from collections import namedtuple
 
 

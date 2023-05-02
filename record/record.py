@@ -1,3 +1,4 @@
+import io
 from math import ceil
 import asyncio
 import os
@@ -58,6 +59,13 @@ class Record:
                 yield fragment
         except:
             pass
+
+    async def get_reader(self, reader: asyncio.StreamReader):
+        type = int.from_bytes(await reader.readexactly(1), 'big')
+        version = int.from_bytes(await reader.readexactly(2), 'big')
+        length = int.from_bytes(await reader.readexactly(2), 'big')
+        fragment = await reader.readexactly(length)
+        return type, io.BytesIO(fragment)
 
 
 message_len = 100 * 1024 * 1024
