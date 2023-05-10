@@ -1,37 +1,38 @@
 import io
 from tools.error import *
 from collections import namedtuple
+from tools.asyncbyte import abyte
 
 
 def reverse(m):
-    for i in range(len(m)//2):
+    for i in range(len(m) // 2):
         tmp = m[i]
-        m[i] = m[len(m)-1 - i]
-        m[len(m)-1 - i] = tmp
+        m[i] = m[len(m) - 1 - i]
+        m[len(m) - 1 - i] = tmp
+
 
 def skip_spaces(patternstream: io.StringIO):
-
     while True:
         res = patternstream.read(1)
         if len(res) == 0:
             return
         if res != ' ' and res != '\t' and res != '\n':
-            patternstream.seek(patternstream.tell()-1)
+            patternstream.seek(patternstream.tell() - 1)
             return
 
 
 def peek(patternstream: io.StringIO):
     res = patternstream.read(1)
     if len(res) != 0:
-        patternstream.seek(patternstream.tell()-1)
+        patternstream.seek(patternstream.tell() - 1)
     return res
 
 
-def get_bytes(input: io.BytesIO, size):
+async def get_bytes(input, size):
     result = bytearray()
     current = 0
     while size != 0:
-        result.extend(input.read(size))
+        result.extend(await input.read(size))
         if current == len(result):
             error_buffer_empty()
         size -= len(result) - current
@@ -39,8 +40,8 @@ def get_bytes(input: io.BytesIO, size):
     return result
 
 
-def get_int(input: io.BytesIO, size):
-    return int.from_bytes(get_bytes(input, size), 'big')
+async def get_int(input, size):
+    return int.from_bytes(await get_bytes(input, size), 'big')
 
 
 def get_bytes_from_int(value: int, size):
@@ -48,13 +49,13 @@ def get_bytes_from_int(value: int, size):
 
 
 def new_io_bytes_from_string(string: str):
-    return io.BytesIO(bytearray.fromhex(string))
+    return abyte(io.BytesIO(bytearray.fromhex(string)))
 
 
 def decode_OID(buffer: bytearray):
     if len(buffer) == 0:
         error_buffer_empty()
-    res = [buffer[0]//40, buffer[0] % 40]
+    res = [buffer[0] // 40, buffer[0] % 40]
 
     index = 1
     flag = True
@@ -71,45 +72,44 @@ def decode_OID(buffer: bytearray):
         index += 1
     return res
 
+
 def encode_OID_singlet(value):
     first = True
     if value == 0:
         return bytearray(1)
     res = bytearray()
     while value > 0:
-        
-        res.append( value % 128 )
+
+        res.append(value % 128)
         if first:
             first = False
         else:
-            res[-1] += 128    
+            res[-1] += 128
         value //= 128
 
     reverse(res)
     return res
 
-    
+
 def encode_OID(buffer):
     res = bytearray()
     if len(buffer) == 0:
         error_buffer_empty()
-    res.append( buffer[0]*40 +  buffer[1] % 40)
+    res.append(buffer[0] * 40 + buffer[1] % 40)
 
     index = 2
-    
+
     while index != len(buffer):
         res.extend(encode_OID_singlet(buffer[index]))
         index += 1
     return res
 
-    
-def encode_OID_from_str(buffer:str):
+
+def encode_OID_from_str(buffer: str):
     buffer = buffer[1:-1]
-    values = [ int(v) for v in  buffer.split('.')]
-    
+    values = [int(v) for v in buffer.split('.')]
+
     return encode_OID(values)
-
-
 
 
 def get_int_size(value: int):
@@ -136,8 +136,8 @@ def encode_length(length, length_size):
         res[0] = length
         return res
     res[0] = length_size + 127
-    for i in range(length_size-1):
-        res[-(i+1)] = length % 256
+    for i in range(length_size - 1):
+        res[-(i + 1)] = length % 256
         length //= 256
     return res
 
@@ -150,9 +150,8 @@ ASN = namedtuple("ASN", ["type", "data"])
 def ASN_INT(value):
     return ASN("ASN_INT", value)
 
+
 def ASN_BOOL(value):
-
-
     return ASN("ASN_BOOL", value)
 
 
@@ -163,18 +162,22 @@ def ASN_BIT(value):
 def ASN_OCT(value):
     return ASN("ASN_OCTET_STRING", bytearray.fromhex(value))
 
+
 def ASN_OID(value):
     return ASN("ASN_OBJECT_IDENTIFIER", encode_OID_from_str(value))
+
 
 def ASN_PRI(value):
     buffer = bytearray()
     buffer.extend(map(ord, value))
     return ASN("ASN_PRINTABLE_STRING", buffer)
 
+
 def ASN_UTC(value):
     buffer = bytearray()
     buffer.extend(map(ord, value))
     return ASN("ASN_UTCTIME", buffer)
+
 
 def ASN_GT(value):
     buffer = bytearray()
@@ -182,10 +185,8 @@ def ASN_GT(value):
     return ASN("ASN_GeneralizedTime", buffer)
 
 
-
-
-ASNSEQ = namedtuple("ASNSeq",  ["data"])
-ASN_CST = namedtuple("ASNSeq",  ["tag", "data"])
+ASNSEQ = namedtuple("ASNSeq", ["data"])
+ASN_CST = namedtuple("ASNSeq", ["tag", "data"])
 
 
 def compare_result(result, expected):
@@ -213,5 +214,3 @@ def compare_result(result, expected):
             assert result.value == expected
         else:
             assert result == expected
-
-

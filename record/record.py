@@ -1,5 +1,6 @@
+import binascii
 import io
-from math import ceil
+from math import ceil, floor
 import asyncio
 import os
 from contextlib import contextmanager
@@ -100,6 +101,84 @@ class Record:
         length = int.from_bytes(await reader.readexactly(2), 'big')
         fragment = await reader.readexactly(length)
         return type, io.BytesIO(fragment)
+
+
+class RecordReaderWrapper:
+    def __init__(self, read_buffer, record_type):
+        self.read_buffer = read_buffer
+        self.record_type = record_type
+        self.pos = 0
+
+    async def read(self, size):
+        self.pos += size
+        return await self.read_buffer(self.record_type, size)
+
+    def tell(self):
+        return self.pos
+
+
+class RecordWriterWrapper:
+    def __init__(self, record_writer, record_type):
+        self.record_writer = record_writer
+        self.record_type = record_type
+
+    def write(self, message):
+        self.record_writer(self.record_type, message)
+
+
+class RecordAlternative:
+
+    def __init__(self, reader, writer):
+        self.reader = reader
+        self.writer = writer
+        self.handshake_buffer = io.BytesIO()
+        self.version = 0x0303
+        self.cipher = False
+        self.input = []
+        self.output = []
+
+    async def read_buffer(self, record_type, size):
+        result = bytearray()
+        current = 0
+        if record_type == 23:
+            while current != size:
+                result.extend(self.handshake_buffer.read(size))
+                if len(result) == current:
+                    await self.read_record()
+                current = len(result)
+        return result
+
+    async def read_record(self):
+        record_type = int.from_bytes(await self.reader.readexactly(1), 'big')
+        version = int.from_bytes(await self.reader.readexactly(2), 'big')
+        assert version == 0x0303
+        length = int.from_bytes(await self.reader.readexactly(2), 'big')
+        fragment = await self.reader.readexactly(length)
+        if record_type == 23:
+            self.input.append(fragment)
+            print(binascii.hexlify(fragment))
+            pos = self.handshake_buffer.tell()
+            self.handshake_buffer.write(fragment)
+            self.handshake_buffer.seek(pos)
+
+    def record_writer(self, record_type, message):
+        n = floor(len(message) / 2 ** 14)
+        for i in range(n):
+            self.send_fragment(record_type, message[i * 2 ** 14: (i + 1) * 2 ** 14])
+        if len(message) % 2 ** 14:
+            self.send_fragment(record_type, message[n * 2 ** 14:])
+
+    def send_fragment(self, record_type, fragment):
+        if not self.cipher:
+            plain = bytearray(record_type.to_bytes(1, 'big')) + \
+                    bytearray(self.version.to_bytes(2, 'big')) + \
+                    bytearray(len(fragment).to_bytes(2, 'big')) + \
+                    fragment
+            self.output.append(plain)
+            self.writer.write(plain)
+
+    def handshaker(self):
+        return RecordReaderWrapper(self.read_buffer, 23), RecordWriterWrapper(self.record_writer, 23)
 
 
 message_len = 100 * 1024 * 1024

@@ -1,1 +1,1 @@
-from .record import Record
+from record.record import Record, RecordAlternative

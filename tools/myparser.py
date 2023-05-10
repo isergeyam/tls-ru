@@ -2,7 +2,6 @@ from tools.mytoken import Token, TokenType, get_token_with_type
 
 from collections import OrderedDict
 
-
 from tools.utils import *
 from tools.result import Result
 
@@ -13,15 +12,17 @@ import binascii
 
 
 def fbytes_reader(size: int):
-    def reader(buffer: io.BytesIO):
-        return Result('fbytes', get_bytes(buffer, size), size, size)
+    async def reader(buffer):
+        return Result('fbytes', await get_bytes(buffer, size), size, size)
+
     return reader
 
 
 def bytes_reader(size: int):
-    def reader(buffer: io.BytesIO):
-        value_size = get_int(buffer, size)
-        return Result('bytes', get_bytes(buffer, value_size), size, value_size)
+    async def reader(buffer):
+        value_size = await get_int(buffer, size)
+        return Result('bytes', await get_bytes(buffer, value_size), size, value_size)
+
     return reader
 
 
@@ -29,13 +30,13 @@ def array_reader(size: int, type_reader):
     if type_reader is None:
         error_unknown_type()
 
-    def reader(buffer: io.BytesIO):
+    async def reader(buffer):
 
-        array_size = get_int(buffer, size)
+        array_size = await get_int(buffer, size)
         start = buffer.tell()
         res = []
         while start + array_size != buffer.tell():
-            res.append(type_reader(buffer))
+            res.append(await type_reader(buffer))
             if start + array_size < buffer.tell():
                 error_incorrect_length_array()
         return Result('array', res, size, array_size)
@@ -44,36 +45,38 @@ def array_reader(size: int, type_reader):
 
 
 def dict_reader(size: int, keys, type_readers):
-    def reader(buffer: io.BytesIO):
-        dict_size = get_int(buffer, size)
+    async def reader(buffer):
+        dict_size = await get_int(buffer, size)
         start = buffer.tell()
         res = OrderedDict()
         length = len(keys)
         for i in range(length):
-            res[keys[i]] = type_readers[i](buffer)
+            res[keys[i]] = await type_readers[i](buffer)
         if start + dict_size != buffer.tell():
             error_incorrect_length_array()
         return Result('dict', res, size, dict_size)
+
     return reader
 
 
 def fdict_reader(keys, type_readers):
-    def reader(buffer: io.BytesIO):
+    async def reader(buffer: io.BytesIO):
         res = {}
         length = len(keys)
         for i in range(length):
-            res[keys[i]] = type_readers[i](buffer)
+            res[keys[i]] = await type_readers[i](buffer)
         return Result('fdict', res, 0, 0)
+
     return reader
 
 
 def variant_reader(size_length: int, type_readers):
-    def reader(buffer: io.BytesIO):
-        type = get_int(buffer, size_length)
+    async def reader(buffer: io.BytesIO):
+        type = await get_int(buffer, size_length)
 
         if not (type in type_readers):
             error_unknown_variant_type()
-        res = type_readers[type](buffer)
+        res = await type_readers[type](buffer)
         return Result('variant', res, size_length, 0, type)
 
     return reader
@@ -85,7 +88,7 @@ class Parser:
         self.types = {}
         pass
 
-    def parse(self,  patternstream: io.StringIO):
+    def parse(self, patternstream: io.StringIO):
         token = get_token_with_type(patternstream, TokenType.name)
 
         return self.get_reader(token.value, patternstream)
@@ -111,21 +114,21 @@ class Parser:
 
         error_unknown_type
 
-    def get_fbytes_reader(self,  patternstream: io.StringIO):
+    def get_fbytes_reader(self, patternstream: io.StringIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         token = get_token_with_type(patternstream, TokenType.const)
         get_token_with_type(patternstream, TokenType.right_bracket)
 
         return fbytes_reader(token.value)
 
-    def get_bytes_reader(self,  patternstream: io.StringIO):
+    def get_bytes_reader(self, patternstream: io.StringIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         token = get_token_with_type(patternstream, TokenType.const)
         get_token_with_type(patternstream, TokenType.right_bracket)
 
         return bytes_reader(token.value)
 
-    def get_array_reader(self,  patternstream: io.StringIO):
+    def get_array_reader(self, patternstream: io.StringIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         token = get_token_with_type(patternstream, TokenType.const)
         size = token.value
@@ -136,7 +139,7 @@ class Parser:
         get_token_with_type(patternstream, TokenType.right_bracket)
         return array_reader(size, type_reader)
 
-    def get_dict_reader(self,   patternstream: io.StringIO):
+    def get_dict_reader(self, patternstream: io.StringIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         keys = []
         type_readers = []
@@ -156,7 +159,7 @@ class Parser:
 
         return dict_reader(size, keys, type_readers)
 
-    def get_fdict_reader(self,   patternstream: io.StringIO):
+    def get_fdict_reader(self, patternstream: io.StringIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         keys = []
         type_readers = []
@@ -202,7 +205,7 @@ class Parser:
     def parse_type_name(self, type: str, buffer: io.BytesIO):
         return self.parse(io.StringIO(type), buffer)
 
-    def parse_fbytes(self,  patternstream: io.StringIO, buffer: io.BytesIO):
+    def parse_fbytes(self, patternstream: io.StringIO, buffer: io.BytesIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         token = get_token_with_type(patternstream, TokenType.const)
         get_token_with_type(patternstream, TokenType.right_bracket)
@@ -210,7 +213,7 @@ class Parser:
         size = token.value
         return Result('fbytes', get_bytes(buffer, size), size)
 
-    def parse_array(self,  patternstream: io.StringIO, buffer: io.BytesIO):
+    def parse_array(self, patternstream: io.StringIO, buffer: io.BytesIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         token = get_token_with_type(patternstream, TokenType.const)
         size = token.value
@@ -227,7 +230,7 @@ class Parser:
                 error_incorrect_length_array()
         return Result('array', res, size)
 
-    def parse_bytes(self,  patternstream: io.StringIO, buffer: io.BytesIO):
+    def parse_bytes(self, patternstream: io.StringIO, buffer: io.BytesIO):
         get_token_with_type(patternstream, TokenType.left_bracket)
         token = get_token_with_type(patternstream, TokenType.const)
         get_token_with_type(patternstream, TokenType.right_bracket)
@@ -353,6 +356,7 @@ def test_variant():
     print(reader(mybufferstream))
     print(reader(mybufferstream))
 
+
 def test_ASN():
     parser = Parser()
     mypattern = "ASN"
@@ -365,7 +369,7 @@ def test_ASN():
     reader = parser.parse(mypytternstream)
 
     print(reader(mybufferstream))
-    
+
 
 if __name__ == "__main__":
     test_array_of_bytes()
@@ -376,4 +380,3 @@ if __name__ == "__main__":
     test_allias()
     test_variant()
     test_ASN()
-

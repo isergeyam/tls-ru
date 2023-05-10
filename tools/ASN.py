@@ -5,46 +5,45 @@ from tools.result import Result
 import binascii
 
 
-def read_length(buffer):
-    first = get_bytes(buffer, 1)[0]
+async def read_length(buffer):
+    first = (await get_bytes(buffer, 1))[0]
     if first < 128:
         return first
     else:
-        return get_int(buffer, first - 128)
+        return await get_int(buffer, first - 128)
 
 
-def read_type(buffer):
-    first = get_bytes(buffer, 1)[0]
-    return first
+async def read_type(buffer):
+    return (await get_bytes(buffer, 1))[0]
 
 
-def parse_ASN(buffer: io.BytesIO):
-    type = read_type(buffer)
-    length = read_length(buffer)
+async def parse_ASN(buffer: io.BytesIO):
+    type = await read_type(buffer)
+    length = await read_length(buffer)
     if type == 1:
-        value = get_int(buffer, length)
+        value = await get_int(buffer, length)
         return Result("ASN_BOOL", value != 0, 0, 0)
     if type == 2:
-        return Result("ASN_INT", get_int(buffer, length), 0, 0)
+        return Result("ASN_INT", await get_int(buffer, length), 0, 0)
     if type == 3:
-        return Result("ASN_BIT_STRING", get_bytes(buffer, length), 0, 0)
+        return Result("ASN_BIT_STRING", await get_bytes(buffer, length), 0, 0)
     if type == 4:
-        return Result("ASN_OCTET_STRING", get_bytes(buffer, length), 0, 0)
+        return Result("ASN_OCTET_STRING", await get_bytes(buffer, length), 0, 0)
     if type == 6:
-        return Result("ASN_OBJECT_IDENTIFIER", get_bytes(buffer, length), 0, 0)
+        return Result("ASN_OBJECT_IDENTIFIER", await get_bytes(buffer, length), 0, 0)
     if type == 19:
-        return Result("ASN_PRINTABLE_STRING", get_bytes(buffer, length), 0, 0)
+        return Result("ASN_PRINTABLE_STRING", await get_bytes(buffer, length), 0, 0)
     if type == 22:
-        return Result("ASN_IA5String", get_bytes(buffer, length), 0, 0)
+        return Result("ASN_IA5String", await get_bytes(buffer, length), 0, 0)
     if type == 23:
-        return Result("ASN_UTCTIME", get_bytes(buffer, length), 0, 0)
+        return Result("ASN_UTCTIME", await get_bytes(buffer, length), 0, 0)
     if type == 24:
-        return Result("ASN_GeneralizedTime", get_bytes(buffer, length), 0, 0)
+        return Result("ASN_GeneralizedTime", await get_bytes(buffer, length), 0, 0)
     if type == 48 or type == 49:
         values = []
         start = buffer.tell()
         while start + length > buffer.tell():
-            values.append(parse_ASN(buffer))
+            values.append(await parse_ASN(buffer))
         if start + length != buffer.tell():
             error_incorrect_length_ASN_sequence()
         if type == 48:
@@ -53,12 +52,12 @@ def parse_ASN(buffer: io.BytesIO):
             return Result("ASN_Set", values, 0, 0)
     if type >= 160:
         start = buffer.tell()
-        value = parse_ASN(buffer)
+        value = await parse_ASN(buffer)
         if start + length != buffer.tell():
             error_incorrect_length_ASN_content_specific()
         return Result("ASN_Context_Specific", value, 0, 0, variant_type=type - 160)
 
-    return Result("ASN_Unknown", get_bytes(buffer, len), 0, 0, variant_type=type)
+    return Result("ASN_Unknown", await get_bytes(buffer, len), 0, 0, variant_type=type)
 
 
 def test_INT():
