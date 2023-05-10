@@ -11,6 +11,8 @@ from TLSTree import *
 from cipher import *
 from Kuznechik import Kuznechik
 
+from tools.utils import append_buffer
+
 
 @contextmanager
 def exception_guard(message_on_exit: str = 'exit'):
@@ -126,12 +128,16 @@ class RecordWriterWrapper:
         self.record_writer(self.record_type, message)
 
 
+
+
+
 class RecordAlternative:
 
     def __init__(self, reader, writer):
         self.reader = reader
         self.writer = writer
         self.handshake_buffer = io.BytesIO()
+        self.appdata_buffer = io.BytesIO()
         self.version = 0x0303
         self.cipher = False
         self.input = []
@@ -140,9 +146,15 @@ class RecordAlternative:
     async def read_buffer(self, record_type, size):
         result = bytearray()
         current = 0
-        if record_type == 23:
+        if record_type == 22:
             while current != size:
                 result.extend(self.handshake_buffer.read(size))
+                if len(result) == current:
+                    await self.read_record()
+                current = len(result)
+        if record_type == 23:
+            while current != size:
+                result.extend(self.appdata_buffer.read(size))
                 if len(result) == current:
                     await self.read_record()
                 current = len(result)
@@ -154,12 +166,11 @@ class RecordAlternative:
         assert version == 0x0303
         length = int.from_bytes(await self.reader.readexactly(2), 'big')
         fragment = await self.reader.readexactly(length)
+        if record_type == 22:
+            append_buffer(self.handshake_buffer, fragment)
+
         if record_type == 23:
-            self.input.append(fragment)
-            print(binascii.hexlify(fragment))
-            pos = self.handshake_buffer.tell()
-            self.handshake_buffer.write(fragment)
-            self.handshake_buffer.seek(pos)
+            append_buffer(self.appdata_buffer, fragment)
 
     def record_writer(self, record_type, message):
         n = floor(len(message) / 2 ** 14)
@@ -178,6 +189,9 @@ class RecordAlternative:
             self.writer.write(plain)
 
     def handshaker(self):
+        return RecordReaderWrapper(self.read_buffer, 22), RecordWriterWrapper(self.record_writer, 22)
+
+    def appdata_rw(self):
         return RecordReaderWrapper(self.read_buffer, 23), RecordWriterWrapper(self.record_writer, 23)
 
 

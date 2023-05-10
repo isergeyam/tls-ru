@@ -32,7 +32,7 @@ async def handle_handshake(reader: asyncio.StreamReader, writer: asyncio.StreamW
 
     rc = res["random"].value
 
-    print("-----\nclient random\n", binascii.hexlify(rc), "\n---------")
+
 
     await asyncio.sleep(1)
 

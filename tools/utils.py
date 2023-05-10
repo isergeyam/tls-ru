@@ -214,3 +214,23 @@ def compare_result(result, expected):
             assert result.value == expected
         else:
             assert result == expected
+
+
+def append_buffer(buffer, fragment):
+    pos = buffer.tell()
+
+    buffer.seek(0, 2)
+    buffer.write(fragment)
+    buffer.seek(pos)
+
+
+if __name__ == "__main__":
+    b = io.BytesIO()
+
+    append_buffer(b, bytearray.fromhex("010203"))
+
+    print(b.read(1))
+
+    append_buffer(b, bytearray.fromhex("010203"))
+
+    print(b.read(1))
