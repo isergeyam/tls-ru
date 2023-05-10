@@ -3,7 +3,7 @@ import typing as tp
 
 
 class WeierstrassCurve(object):
-    def __init__(self, p: int, a, b, m: int):
+    def __init__(self, p: int, a, b, m: int, q: int):
         """Weierstrass elliptic curve as: (y**2 = x**3 + a * x + b) in Zp
         - a, b: Zp[p].Elements params of curve formula
         - p: prime number
@@ -18,6 +18,7 @@ class WeierstrassCurve(object):
         self.b = b
         self.p = p
         self.m = m
+        self.q = q
         pass
 
     def __call__(self, x, y):
@@ -103,7 +104,7 @@ class WeierstrassCurve(object):
 
 
 class TwistedEdwardsCurve(object):
-    def __init__(self, p: int, a, d, m):
+    def __init__(self, p: int, a, d, m, q: int):
         """TwistedEdwards elliptic curve as: ax**2 + y**2 = 1 + dx**2y**2 in Zp
         - a, d: Zp[p].Elements params of curve formula
         - p: prime number
@@ -116,7 +117,8 @@ class TwistedEdwardsCurve(object):
         self.d = d
         self.p = p
         self.m = m
-        self.weierstrass = WeierstrassCurve(p, *self._to_weierstrass_params(), m)
+        self.q = q
+        self.weierstrass = WeierstrassCurve(p, *self._to_weierstrass_params(), m, q)
 
     def __call__(self, x, y):
         return TwistedEdwardsCurve.Point(self.p, self.a, self.d, x, y)
@@ -197,7 +199,7 @@ def main():
     a = F[0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc]
     b = F[0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b]
     m = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
-    p256 = WeierstrassCurve(p, a, b, m)
+    p256 = WeierstrassCurve(p, a, b, m, 0)
     print(p256.F.p)
     print(p256.m)
     print(p256.n)
@@ -220,7 +222,7 @@ def main():
     d = F[
         0x9e4f5d8c017d8d9f13a5cf3cdf5bfe4dab402d54198e31ebde28a0621050439ca6b39e0a515c06b304e2ce43e79e369e91a0cfc2bc2a22b4ca302dbb33ee7550]
     m = 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc98cdba46506ab004c33a9ff5147502cc8eda9e7a769a12694623cef47f023ed
-    gost512 = TwistedEdwardsCurve(p, a, d, m)
+    gost512 = TwistedEdwardsCurve(p, a, d, m, 0)
     G = gost512(F[0x12], F[
         0x469af79d1fb1f5e16b99592b77a01e2a0fdfb0d01794368d9a56117f7b38669522dd4b650cf789eebf068c5d139732f0905622c04b2baae7600303ee73001a3d])
 

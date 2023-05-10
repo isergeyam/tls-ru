@@ -128,9 +128,6 @@ class RecordWriterWrapper:
         self.record_writer(self.record_type, message)
 
 
-
-
-
 class RecordAlternative:
 
     def __init__(self, reader, writer):
@@ -237,11 +234,6 @@ async def client():
 
         rec.send_records(writer)
         writer.close()
-
-
-def task_thread():
-    asyncio.run(start_server())
-    print("server done!")
 
 
 async def main():
