@@ -3,6 +3,10 @@ import binascii
 import io
 from collections import namedtuple
 
+import asyncio
+
+from tools.utils import new_io_bytes_from_string
+
 
 def HandshakeParser():
     parser = Parser()
@@ -141,19 +145,18 @@ def compare_result(result, expected):
         assert result.value == expected
 
 
-def test_client_hello():
+async def test_client_hello():
     reader = HandshakeParser()
 
-    mybuffer = bytearray.fromhex(
-        """
+    mybuffer_hex = """
         01 00 00 40 03 03 93 3E A2 1E C3 80 2A 56 15 50
         EC 78 D6 ED 51 AC 24 39 D7 E7 49 C3 1B C3 A3 45
         61 65 88 96 84 CA 00 00 04 FF 88 FF 89 01 00 00
         13 00 0D 00 06 00 04 EE EE EF EF FF 01 00 01 00
         00 17 00 00
-        """)
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+        """
+    mybufferstream = new_io_bytes_from_string(mybuffer_hex)
+    res = await reader(mybufferstream)
     expected = Variant \
         (1,
          {
@@ -178,20 +181,19 @@ def test_client_hello():
     compare_result(res, expected)
 
 
-def test_server_hello():
+async def test_server_hello():
     reader = HandshakeParser()
 
-    mybuffer = bytearray.fromhex(
-        """
+    mybuffer = """
         02 00 00 41 03 03 93 3E A2 1E 49 C3 1B C3 A3 45
         61 65 88 96 84 CA A5 57 6C E7 92 4A 24 F5 81 13
         80 8D BD 9E F8 56 10 C3 80 2A 56 15 50 EC 78 D6
         ED 51 AC 24 39 D7 E7 FF 88 00 00 09 FF 01 00 01
         00 00 17 00 00
-        """)
+        """
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     expected = Variant \
         (2,
          {
@@ -211,16 +213,15 @@ def test_server_hello():
     compare_result(res, expected)
 
 
-def test_certificate_request():
+async def test_certificate_request():
     reader = HandshakeParser()
 
-    mybuffer = bytearray.fromhex(
-        """
+    mybuffer = """
         0D00000B02EEEF0004EEEEEFEF0000
-        """)
+        """
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     expected = Variant \
         (0x0D,
          {
@@ -233,39 +234,40 @@ def test_certificate_request():
     compare_result(res, expected)
 
 
-def test_server_hello_done():
+async def test_server_hello_done():
     reader = HandshakeParser()
 
-    mybuffer = bytearray.fromhex(
-        """
+    mybuffer = """
         0E 00 00 00
-        """)
+        """
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     expected = Variant \
         (0x0E, dict())
     compare_result(res, expected)
 
 
-def test_client_key_exchange():
+async def test_client_key_exchange():
     reader = HandshakeParser()
 
-    key_exchange_data = bytes.fromhex(
-        """
+    key_exchange_data =     """
         30819404282536556CCDAC34914FD115 4C2A9F9E5D7FDE774350FD66907A2021 A9A1DF8C982F30CF2BE4CF91AF306830 2106082A85030701010101301506092A 850307010201010106082A8503070101 020203430004408D490F4CB030E23974 E218C2787312BED9F361377CCCF52A7E
         73856C2A19D98600CEC1B836C6405B24 1BA7CD8C085E2DEC6C4E0A61D972F1D9 8FE4B8760E1971
-        """)
-    mybuffer = bytes.fromhex("10000097") + key_exchange_data;
+        """
+    mybuffer = "10000097" + key_exchange_data
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     expected = Variant \
         (0x10, key_exchange_data)
+
+    print(res)
+
     compare_result(res, expected)
 
 
-def test_certificate_verify():
+async def test_certificate_verify():
     reader = HandshakeParser()
 
     mybuffer = bytes.fromhex("""
@@ -274,8 +276,8 @@ def test_certificate_verify():
 00B32717482E7624B257D9797C8FF602 7996D84627609FF8625637DFAEF4A648 C4A3517CA65E5BA3794DC5997839EF1A 
     """)
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     expected = Variant \
         (0x0F, {
             "algorithm": {"hash": bytes.fromhex("ee"), "signature": bytes.fromhex("ee")},
@@ -287,7 +289,7 @@ def test_certificate_verify():
     compare_result(res, expected)
 
 
-def test_finished():
+async def test_finished():
     reader = HandshakeParser()
     verify_data = bytes.fromhex("""
     2A75BE8DB1281820C3E91C3ACFB356E5
@@ -300,8 +302,8 @@ def test_finished():
         38BDC640DA0A81635986F3D28C391521 
         """)
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     expected = Variant(0x14, {"verify_data": verify_data})
     compare_result(res, expected)
 
@@ -316,13 +318,13 @@ def test_finished():
 #     """
 #     mybuffer = bytearray.fromhex(cert_str)
 #     print(len(mybuffer))
-#     mybufferstream = io.BytesIO(mybuffer)
-#     res = reader(mybufferstream)
+#     mybufferstream = new_io_bytes_from_string(mybuffer)
+#     res = await reader(mybufferstream)
 #     expected = Variant(0x0B, [bytes.fromhex(cert_str[46:])])
 #     compare_result(res, expected)
 
 
-def test_handshake():
+async def test_handshake():
     reader = HandshakeParser()
 
     mybuffer = bytearray.fromhex(
@@ -333,8 +335,8 @@ def test_handshake():
         13 00 0D 00 06 00 04 EE EE EF EF FF 01 00 01 00
         00 17 00 00
         """)
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     print(res)
     print("handshake type:", res.variant_type)
     print("version major :", res["client_version"]["major"].value)
@@ -355,7 +357,7 @@ def test_handshake():
 
     print(res.update_size())
 
-    buf = io.BytesIO()
+    buf = new_io_bytes_from_string()
 
     print(res.write(buf))
     buf.seek(0)
@@ -371,8 +373,8 @@ def test_handshake():
         00 00 17 00 00
         """)
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
     print(res)
     print("handshake type:", res.variant_type)
     print("version major :", res["server_version"]["major"].value)
@@ -388,7 +390,7 @@ def test_handshake():
 
     print(res.update_size())
 
-    buf = io.BytesIO()
+    buf = new_io_bytes_from_string()
 
     print(res.write(buf))
     buf.seek(0)
@@ -488,14 +490,14 @@ def test_handshake():
         """
     )
 
-    mybufferstream = io.BytesIO(mybuffer)
-    res = reader(mybufferstream)
+    mybufferstream = new_io_bytes_from_string(mybuffer)
+    res = await reader(mybufferstream)
 
     print(res.update_size())
 
     print(res)
 
-    buf = io.BytesIO()
+    buf = new_io_bytes_from_string()
 
     print(res.write(buf))
     buf.seek(0)
@@ -503,11 +505,11 @@ def test_handshake():
 
 
 if __name__ == "__main__":
-    test_client_hello()
-    test_server_hello()
-    test_certificate_request()
-    test_server_hello_done()
-    test_client_key_exchange()
-    test_certificate_verify()
-    test_finished()
-    test_handshake()
+    asyncio.run(test_client_hello())
+    asyncio.run(test_server_hello())
+    asyncio.run(test_certificate_request())
+    asyncio.run(test_server_hello_done())
+    asyncio.run(test_client_key_exchange())
+    asyncio.run(test_certificate_verify())
+    asyncio.run(test_finished())
+    asyncio.run(test_handshake())
