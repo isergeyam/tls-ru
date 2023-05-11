@@ -121,7 +121,7 @@ class WeierstrassCurve(object):
 
 class TwistedEdwardsCurve(object):
     def __init__(self, p: int, a, d, m, q: int):
-        """TwistedEdwards elliptic curve as: ax**2 + y**2 = 1 + dx**2y**2 in Zp
+        """TwistedEdwards elliptic curve as: a * x**2 + y**2 = 1 + d * x**2 * y**2 in Zp
         - a, d: Zp[p].Elements params of curve formula
         - p: prime number
         """

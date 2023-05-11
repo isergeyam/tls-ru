@@ -277,7 +277,8 @@ def id_tc26_gost_3410_2012_256_paramSetA():
     60 CA 1E 32 AA 47 5B 34 84 88 C3 8F AB 07 64 9C
     E7 EF 8D BE 87 F2 2E 81 F9 2B 25 92 DB A3 00 E7
     """), 'big')
-    return construct_edwards(p, a, b, e, d, m, q, x, y, u, v)
+    return construct_weierstrass(p, a, b, m, q, x, y)
+    # return construct_edwards(p, a, b, e, d, m, q, x, y, u, v)
 
 
 def id_tc26_gost_3410_2012_512_paramSetC():
@@ -344,14 +345,15 @@ def id_tc26_gost_3410_2012_512_paramSetC():
     22 DD 4B 65 0C F7 89 EE BF 06 8C 5D 13 97 32 F0
     90 56 22 C0 4B 2B AA E7 60 03 03 EE 73 00 1A 3D
     """), 'big')
-    return construct_edwards(p, a, b, e, d, m, q, x, y, u, v)
+    return construct_weierstrass(p, a, b, m, q, x, y)
+    # return construct_edwards(p, a, b, e, d, m, q, x, y, u, v)
 
 
 ru_curves = {params[0][2]: id_tc26_gost_3410_2012_256_paramSetB(), params[1][2]: id_tc26_gost_3410_2012_256_paramSetC(),
              params[2][2]: id_tc26_gost_3410_2012_256_paramSetD(), params[3][2]: id_tc26_gost_3410_12_512_paramSetA(),
              params[4][2]: id_tc26_gost_3410_12_512_paramSetB(),
-             params[5][2]: id_tc26_gost_3410_2012_256_paramSetA()[0],
-             params[6][2]: id_tc26_gost_3410_2012_512_paramSetC()[0]}
+             params[5][2]: id_tc26_gost_3410_2012_256_paramSetA(),
+             params[6][2]: id_tc26_gost_3410_2012_512_paramSetC()}
 
 
 def get_curve(oid: bytearray):
@@ -362,12 +364,12 @@ def get_curve(oid: bytearray):
 if __name__ == "__main__":
     print(ru_curves)
 
-    test =id_tc26_gost_3410_2012_256_paramSetB()
+    test = id_tc26_gost_3410_2012_256_paramSetB()
     p = test.G
     print(id_tc26_gost_3410_2012_256_paramSetB().G)
     print(id_tc26_gost_3410_2012_256_paramSetC().G)
     print(id_tc26_gost_3410_2012_256_paramSetD().G)
     print(id_tc26_gost_3410_12_512_paramSetA().G)
     print(id_tc26_gost_3410_12_512_paramSetB().G)
-    print(id_tc26_gost_3410_2012_256_paramSetA()[0].G)
-    print(id_tc26_gost_3410_2012_512_paramSetC()[0].G)
+    print(id_tc26_gost_3410_2012_256_paramSetA().G)
+    print(id_tc26_gost_3410_2012_512_paramSetC().G)

@@ -1,4 +1,5 @@
 import io
+import copy
 
 from record import RecordAlternative
 
@@ -91,28 +92,27 @@ async def test():
     Kss = G * ksi
     print(Kss)
 
-    print(Kss.point.x.val)
+    print(Kss.x.val)
     print(xi)
 
-    Tmp = G * 1
-    Tmp.point.x.val = xi
-    Tmp.point.y.val = yi
+    Tmp = copy.deepcopy(G)
+    # Tmp.point.x.val = xi
+    # Tmp.point.y.val = yi
 
     print(Tmp)
     print(G)
 
-    try:
-        print(curve(xi, yi))
-    except:
-        print("failed")
-
+    # try:
+    # print(curve(curve.F[xi], curve.F[yi]))
+    # except:
+    #     print("failed")
 
     F = curve.F
 
-    try:
-        print(curve(F[xi], F[yi]))
-    except:
-        print("failed")
+    # try:
+    print(curve(F[xi], F[yi]))
+    # except:
+    #     print("failed")
 
 
 async def test2():
@@ -175,9 +175,9 @@ async def test2():
 
     Keph = G * keph
 
-    Ks = G * 1
-    Ks.point.x.val = 1
-    Ks.point.y.val = 1
+    Ks = copy.deepcopy(G)
+    Ks.x.val = 1
+    Ks.y.val = 1
 
     print("-----\n", Keph)
     tmp = bytearray.fromhex("""550ACD11B66DD695AD18418FA7A2DC63
@@ -190,7 +190,6 @@ async def test2():
     Keph = G * keph
 
     print("-----\n", Keph)
-
 
 
 if __name__ == "__main__":
