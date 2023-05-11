@@ -3,10 +3,14 @@ from record import RecordAlternative
 import binascii
 
 import asyncio
+import io
 from contextlib import contextmanager
 
-from tools import HandshakeParser
+from tools import HandshakeParser, reverse
 from tools.handshaketypes import *
+from tools.asyncbyte import abyte
+
+from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC
 
 
 @contextmanager
@@ -87,6 +91,18 @@ async def handle_read_records(reader: asyncio.StreamReader, writer: asyncio.Stre
 
     hw.write(ServerDone().to_bytes())
 
+    buffer = abyte(io.BytesIO(cert.to_bytes()))
+
+    res = await parser(buffer)
+
+    curve = get_curve_from_cert(res)
+
+    ks = bytearray.fromhex("""12FD7A70067479A0F66C59F9A25534AD
+             FBC7ABFD3CC72D79806F8B402601644B
+             3005ED365A2D8989A8CCAE640D5FC08D
+             D27DFBBFE137CF528E1AC6D445192E01""")
+    ksi = int.from_bytes(ks, 'big')
+
     server.close()
 
 
@@ -134,12 +150,29 @@ async def main():
     print(get_name_from_cert(res))
 
     x, y = get_point_from_cert(res)
+    reverse(x)
+    reverse(y)
+
+    xi = int.from_bytes(x, 'big')
+    yi = int.from_bytes(y, 'big')
+
     print(binascii.hexlify(x))
     print(binascii.hexlify(y))
 
+    print(len(x))
+
     curve = get_curve_from_cert(res)
-    print(binascii.hexlify(curve))
-    print(res["body"][0]["certificate"][0][6][0][1][0])
+    G = curve.G
+    Ks = G * 1
+    Ks.point.x.val = xi
+    Ks.point.y.val = yi
+
+    print("client get Ks", Ks)
+
+    keph = curve.random()
+
+    print(keph)
+    print(keph % 2, keph % curve.q)
 
     res = await parser(hr)
 

@@ -1,8 +1,8 @@
 from tools.utils import *
 import binascii
-from field import Zp
-from ec import WeierstrassCurve
-from ec import TwistedEdwardsCurve
+from ec.field import Zp
+from ec.elliptic import WeierstrassCurve
+from ec.elliptic import TwistedEdwardsCurve
 
 params = [["id-tc26-gost-3410-2012-256-paramSetB", "[1.2.643.7.1.2.1.1.2]", 0],
           ['id-tc26-gost-3410-2012-256-paramSetC', '[1.2.643.7.1.2.1.1.3]', 0],
@@ -16,7 +16,7 @@ params = [["id-tc26-gost-3410-2012-256-paramSetB", "[1.2.643.7.1.2.1.1.2]", 0],
 curve_params_to_ec = dict()
 
 for p in params:
-    p[2] = encode_OID_from_str(p[1])
+    p[2] = int.from_bytes(encode_OID_from_str(p[1]), 'big')
 
 
 def construct_weierstrass(p, a, b, m, q, x, y):
@@ -347,7 +347,23 @@ def id_tc26_gost_3410_2012_512_paramSetC():
     return construct_edwards(p, a, b, e, d, m, q, x, y, u, v)
 
 
+ru_curves = {params[0][2]: id_tc26_gost_3410_2012_256_paramSetB(), params[1][2]: id_tc26_gost_3410_2012_256_paramSetC(),
+             params[2][2]: id_tc26_gost_3410_2012_256_paramSetD(), params[3][2]: id_tc26_gost_3410_12_512_paramSetA(),
+             params[4][2]: id_tc26_gost_3410_12_512_paramSetB(),
+             params[5][2]: id_tc26_gost_3410_2012_256_paramSetA()[0],
+             params[6][2]: id_tc26_gost_3410_2012_512_paramSetC()[0]}
+
+
+def get_curve(oid: bytearray):
+    val = int.from_bytes(oid, 'big')
+    return ru_curves[int.from_bytes(oid, 'big')]
+
+
 if __name__ == "__main__":
+    print(ru_curves)
+
+    test =id_tc26_gost_3410_2012_256_paramSetB()
+    p = test.G
     print(id_tc26_gost_3410_2012_256_paramSetB().G)
     print(id_tc26_gost_3410_2012_256_paramSetC().G)
     print(id_tc26_gost_3410_2012_256_paramSetD().G)

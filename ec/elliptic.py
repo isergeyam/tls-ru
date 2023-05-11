@@ -1,5 +1,9 @@
-from field import Zp
+import binascii
+
+from ec.field import Zp
 import typing as tp
+
+import os
 
 
 class WeierstrassCurve(object):
@@ -20,6 +24,9 @@ class WeierstrassCurve(object):
         self.m = m
         self.q = q
         pass
+
+    def random(self):
+        return int.from_bytes(os.urandom(512), 'big') % self.p + 1
 
     def __call__(self, x, y):
         return WeierstrassCurve.Point(self.p, self.a, self.b, x, y)
@@ -102,6 +109,15 @@ class WeierstrassCurve(object):
                 pass
             return r
 
+        def __str__(self):
+            return hex(self.x.val) + "\n" + hex(self.y.val)
+
+        def get_x(self):
+            return self.x
+
+        def get_y(self):
+            return self.y
+
 
 class TwistedEdwardsCurve(object):
     def __init__(self, p: int, a, d, m, q: int):
@@ -119,6 +135,9 @@ class TwistedEdwardsCurve(object):
         self.m = m
         self.q = q
         self.weierstrass = WeierstrassCurve(p, *self._to_weierstrass_params(), m, q)
+
+    def random(self):
+        return 2 * int.from_bytes(os.urandom(512), 'big') % self.q + 1
 
     def __call__(self, x, y):
         return TwistedEdwardsCurve.Point(self.p, self.a, self.d, x, y)
@@ -190,6 +209,15 @@ class TwistedEdwardsCurve(object):
         def __mul__(self, n):
             """p*n = p + p + ... + p"""
             return TwistedEdwardsCurve.Point(self.point * n, self.a, self.d, 0, 0)
+
+        def __str__(self):
+            return self.point.__str__()
+
+        def get_x(self):
+            return self.point.get_x()
+
+        def get_y(self):
+            return self.point.get_y()
 
 
 def main():

@@ -5,6 +5,8 @@ from collections import OrderedDict
 
 import time
 
+from ec import get_curve
+
 
 def TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC():
     return fbyteresult("ff89")
@@ -152,7 +154,8 @@ def get_point_from_cert(cert):
 
 
 def get_curve_from_cert(cert):
-    return cert["body"][0]["certificate"][0][6][0][1][0].to_bytes()
+    oid = cert["body"][0]["certificate"][0][6][0][1][0].to_bytes()
+    return get_curve(oid[2:])
 
 
 def test_a():

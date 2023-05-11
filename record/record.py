@@ -11,7 +11,7 @@ from TLSTree import *
 from cipher import *
 from Kuznechik import Kuznechik
 
-from tools.utils import append_buffer
+from tools import append_buffer
 
 
 @contextmanager
