@@ -10,6 +10,10 @@ from tools import HandshakeParser, reverse
 from tools.handshaketypes import *
 from tools.asyncbyte import abyte
 
+from Streebog import StreebogHasher
+
+from composition import *
+
 from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC
 
 
@@ -163,7 +167,19 @@ async def main():
 
     curve = get_curve_from_cert(res)
     G = curve.G
-    Ks = G * 1
+
+    tmp = bytearray.fromhex("""550ACD11B66DD695AD18418FA7A2DC63
+                             6B7E29DCA24536AABC826EE3175BB1FA
+                             A5C77C7482373DE16CE4A6F73CCE7F78
+                             471493FF2C0709B8B706C9E8A25E6C1E""")
+
+    keph = int.from_bytes(tmp, 'big')
+
+    Keph = G * keph
+
+    print("-----\n", Keph)
+
+    Ks = copy(G)
     Ks.point.x.val = xi
     Ks.point.y.val = yi
 
@@ -175,8 +191,18 @@ async def main():
     print(keph % 2, keph % curve.q)
 
     res = await parser(hr)
-
     print(res)
+
+    tmp = bytearray.fromhex("""550ACD11B66DD695AD18418FA7A2DC63
+                                 6B7E29DCA24536AABC826EE3175BB1FA
+                                 A5C77C7482373DE16CE4A6F73CCE7F78
+                                 471493FF2C0709B8B706C9E8A25E6C1E""")
+
+    keph = int.from_bytes(tmp, 'big')
+
+    Keph = G * keph
+
+    print("-----\n", Keph)
 
     await server
 
