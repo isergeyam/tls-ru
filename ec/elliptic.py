@@ -113,10 +113,10 @@ class WeierstrassCurve(object):
             return hex(self.x.val) + "\n" + hex(self.y.val)
 
         def get_x(self):
-            return self.x
+            return self.x.val
 
         def get_y(self):
-            return self.y
+            return self.y.val
 
 
 class TwistedEdwardsCurve(object):

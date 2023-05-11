@@ -17,6 +17,7 @@ from composition import *
 from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC
 
 
+
 @contextmanager
 def exception_guard(message_on_exit: str = 'exit'):
     try:
@@ -177,22 +178,21 @@ async def main():
 
     Keph = G * keph
 
-    print("-----\n", Keph)
+    print("---KEPH--\n", Keph)
 
-    Ks = copy(G)
-    Ks.point.x.val = xi
-    Ks.point.y.val = yi
+    Qs = id_tc26_gost_3410_2012_512_paramSetC()[0].G
 
-    print("client get Ks", Ks)
+    Qs.point.x.val = xi
+    Qs.point.y.val = yi
+
+    print("client get Qs", Qs)
 
     keph = curve.random()
 
     print(keph)
     print(keph % 2, keph % curve.q)
 
-    res = await parser(hr)
-    print(res)
-
+    ### Example
     tmp = bytearray.fromhex("""550ACD11B66DD695AD18418FA7A2DC63
                                  6B7E29DCA24536AABC826EE3175BB1FA
                                  A5C77C7482373DE16CE4A6F73CCE7F78
@@ -203,6 +203,38 @@ async def main():
     Keph = G * keph
 
     print("-----\n", Keph)
+
+    rc = bytearray.fromhex("""933EA21EC3802A561550EC78D6ED51AC
+        2439D7E749C31BC3A3456165889684CA""")
+
+    rs = bytearray.fromhex("""933EA21E49C31BC3A3456165889684CA
+        A5576CE7924A24F58113808DBD9EF856""")
+
+    hasher = StreebogHasher(256)
+
+    H = hasher << rc << rs >> 0
+
+    print(binascii.hexlify(H))
+
+    print(binascii.hexlify(keph.to_bytes(64, 'big')))
+
+    lklk = KEG(keph, Qs, H, curve)
+    ks = bytearray.fromhex("""12FD7A70067479A0F66C59F9A25534AD
+                 FBC7ABFD3CC72D79806F8B402601644B
+                 3005ED365A2D8989A8CCAE640D5FC08D
+                 D27DFBBFE137CF528E1AC6D445192E01""")
+    ksi = int.from_bytes(ks, 'big')
+
+    klkl = KEG(ksi, Keph, H, curve)
+
+
+
+    print(binascii.hexlify(lklk))
+    print(binascii.hexlify(klkl[:32]))
+
+    res = await parser(hr)
+    print(res)
+
 
     await server
 
