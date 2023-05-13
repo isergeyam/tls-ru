@@ -17,7 +17,6 @@ from composition import *
 from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC
 
 
-
 @contextmanager
 def exception_guard(message_on_exit: str = 'exit'):
     try:
@@ -180,10 +179,9 @@ async def main():
 
     print("---KEPH--\n", Keph)
 
-    Qs = id_tc26_gost_3410_2012_512_paramSetC()[0].G
+    Qs = curve(curve.F[xi], curve.F[yi])
 
-    Qs.point.x.val = xi
-    Qs.point.y.val = yi
+    print(Qs)
 
     print("client get Qs", Qs)
 
@@ -227,14 +225,11 @@ async def main():
 
     klkl = KEG(ksi, Keph, H, curve)
 
-
-
     print(binascii.hexlify(lklk))
     print(binascii.hexlify(klkl[:32]))
 
     res = await parser(hr)
     print(res)
-
 
     await server
 

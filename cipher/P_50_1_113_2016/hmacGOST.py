@@ -1,6 +1,9 @@
 from Streebog import *
 
 
+# HMAC_GOSTR3411_2012_256
+# HMAC_GOSTR3411_2012_512
+
 class HMAC:
     def __init__(self, key: bytearray, mode: int):
         self.hasher_1 = StreebogHasher(mode)
@@ -9,7 +12,7 @@ class HMAC:
 
         self.k1, self.k2 = self.inner_keys(key)
 
-    def __call__(self, key:bytearray):
+    def __call__(self, key: bytearray):
         self.k1, self.k2 = self.inner_keys(key)
         return self
 

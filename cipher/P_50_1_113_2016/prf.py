@@ -1,16 +1,19 @@
-from hmac import HMAC
+from hmacGOST import HMAC
 
+
+# PRF_TLS_GOSTR3411_2012_256
+# PRF_TLS_GOSTR3411_2012_512
 
 class PRF:
     def __init__(self, key: bytearray, mode: int):
         self.hmac = HMAC(key, mode)
-        self.mode = mode // 8
+        self.mode = mode
 
     def __call__(self, key: bytearray):
         self.hmac = self.hmac(key)
         return self
 
-    def digest(self, label: bytearray, seed:bytearray, size: int):
+    def digest(self, label: bytearray, seed: bytearray, size: int):
         A = [label + seed]
         n = size // self.mode
 

@@ -1,6 +1,8 @@
-from TLSTree.hmacGOST import HMAC
+from cipher.P_50_1_113_2016.hmacGOST import HMAC
 import binascii
 
+
+# KDF_GOSTR3411_2012_256
 
 def kdf256(key: bytearray, label: bytearray, seed: bytearray):
     hmac = HMAC(key, 256)

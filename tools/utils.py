@@ -11,6 +11,15 @@ def reverse(m):
         m[len(m) - 1 - i] = tmp
 
 
+def min_bytearray_big(value: int):
+    res = bytearray()
+    while value:
+        res.append(value % 256)
+        value //= 256
+    reverse(res)
+    return res
+
+
 def skip_spaces(patternstream: io.StringIO):
     while True:
         res = patternstream.read(1)
