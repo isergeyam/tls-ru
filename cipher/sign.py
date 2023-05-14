@@ -1,5 +1,5 @@
 from ec.elliptic import *
-from Streebog import StreebogHasher
+from cipher.Streebog import StreebogHasher
 from random import randint
 
 

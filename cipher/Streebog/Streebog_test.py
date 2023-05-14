@@ -1,6 +1,6 @@
 import unittest
 import time
-import Streebog
+from cipher import Streebog
 import binascii
 
 
@@ -145,8 +145,8 @@ class TestStreebog(unittest.TestCase):
                     self.hasher512.update(bytearray(i))
                     self.hasher256.update(bytearray(i))
                 res1 = self.hasher512.finish()
-                res2 = Streebog.streebog(bytearray(i*j))
-                res3 = Streebog.streebog(bytearray(i*j), 256)
+                res2 = Streebog.streebog(bytearray(i * j))
+                res3 = Streebog.streebog(bytearray(i * j), 256)
                 res4 = self.hasher256.finish()
                 self.assertEqual(res1, res2)
                 self.assertEqual(res3, res4)

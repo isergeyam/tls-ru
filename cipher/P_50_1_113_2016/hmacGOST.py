@@ -1,4 +1,4 @@
-from Streebog import *
+from cipher.Streebog import *
 
 
 # HMAC_GOSTR3411_2012_256

@@ -1,4 +1,4 @@
-from Kuznechik import Kuznechik
+from cipher.Kuznechik import Kuznechik
 import math
 import numpy as np
 

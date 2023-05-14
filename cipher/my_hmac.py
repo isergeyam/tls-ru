@@ -1,4 +1,4 @@
-from Streebog import *
+from cipher.Streebog import *
 
 
 class HMAC:

@@ -1,6 +1,7 @@
 import binascii
 
 from cipher.P_50_1_113_2016.KDF256 import KDF256
+from cipher.Kuznechik import Kuznechik
 
 
 class Diver:
@@ -53,6 +54,19 @@ class TLSTree:
             self.divers[i].change_key(self.keys[i])
             self.levels_in[i] = self.c[i] & self.seed
             self.keys[i + 1] = self.divers[i](bytearray(self.levels_in[i].to_bytes(8, 'big')))
+
+
+class KuznechikOnTree:
+    def __init__(self, key: bytearray):
+        self.tlstree = newTLSTreeKuznechik(key)
+        self.index = 0
+        self.kuznechik = Kuznechik(self.tlstree(self.index))
+
+    def __call__(self, index):
+        if self.index // 64 != index // 64:
+            self.kuznechik.ChangeKey(self.tlstree(index))
+            self.index = index
+        return self.kuznechik
 
 
 def newTLSTreeKuznechik(key: bytearray):

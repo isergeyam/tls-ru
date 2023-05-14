@@ -1,7 +1,6 @@
-from Kuznechik import Kuznechik
+from cipher.Kuznechik import Kuznechik
 from ctracpkm import xor
 import math
-import binascii
 
 
 class Ctr(object):

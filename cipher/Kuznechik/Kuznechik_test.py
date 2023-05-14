@@ -1,7 +1,6 @@
 import unittest
 import time
-import Kuznechik
-import binascii
+from cipher import Kuznechik
 
 
 def reverse(m):

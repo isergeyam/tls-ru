@@ -1,7 +1,5 @@
 from record import RecordAlternative
 
-import binascii
-
 import asyncio
 import io
 from contextlib import contextmanager
@@ -10,11 +8,7 @@ from tools import HandshakeParser, reverse
 from tools.handshaketypes import *
 from tools.asyncbyte import abyte
 
-from Streebog import StreebogHasher
-
 from composition import *
-
-from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC
 
 
 @contextmanager

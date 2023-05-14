@@ -3,14 +3,12 @@ from math import ceil, floor
 import asyncio
 import os
 from contextlib import contextmanager
-import typing as tp
 
 from cipher.TLSRu.TLSTree import *
 from cipher import *
-from Kuznechik import Kuznechik
+from cipher.Kuznechik import Kuznechik
 
 from tools import append_buffer
-from traceback import print_exc
 
 
 @contextmanager
@@ -37,6 +35,8 @@ class Record:
         self.IV = None
         self.mac_tls_tree = None
         self.enc_tls_tree = None
+        self.mac_kaznechik_on_tree = None
+        self.enc_kaznechik_on_tree = None
         # по идее ключи и IV должны откуда то приходить
 
     def set_keys(self, Kmac, Kenc, IV):
@@ -45,6 +45,8 @@ class Record:
         self.IV = IV
         self.mac_tls_tree = newTLSTreeKuznechik(Kmac)
         self.enc_tls_tree = newTLSTreeKuznechik(Kenc)
+        self.mac_kaznechik_on_tree = KuznechikOnTree(Kmac)
+        self.enc_kaznechik_on_tree = KuznechikOnTree(Kenc)
         self.cipher = True
         self.seqnum = 0
 
@@ -77,14 +79,12 @@ class Record:
                 MACData = self.mac_data(length, fragment)
                 mac_data = MACData
 
-                Kmac = self.mac_tls_tree(self.seqnum)
-                omac = OMAC(Kuznechik(Kmac), 128)
+                omac = OMAC(self.mac_kaznechik_on_tree(self.seqnum), 128)
                 RecMac = omac.mac(MACData)
 
-                Kenc = self.enc_tls_tree(self.seqnum)
                 EncData = fragment + RecMac
                 IV = bytearray(((int.from_bytes(self.IV, 'big') + self.seqnum) % pow(2, 64)).to_bytes(8, 'big'))
-                RecEnc = CtrAcpkm(Kuznechik(Kenc), 256, 128).encode(IV, EncData)
+                RecEnc = CtrAcpkm(self.enc_kaznechik_on_tree(self.seqnum), 256, 128).encode(IV, EncData)
                 length = len(RecEnc)
 
                 writer.write(bytearray(self.type.to_bytes(1, 'big')) +
@@ -107,11 +107,9 @@ class Record:
                 self.seqnum += 1
                 return type, fragment
             else:
-                Kmac = self.mac_tls_tree(self.seqnum)
-                omac = OMAC(Kuznechik(Kmac), 128)
-                Kenc = self.enc_tls_tree(self.seqnum)
+                omac = OMAC(self.mac_kaznechik_on_tree(self.seqnum), 128)
                 IV = bytearray(((int.from_bytes(self.IV, 'big') + self.seqnum) % pow(2, 64)).to_bytes(8, 'big'))
-                RecEnc = CtrAcpkm(Kuznechik(Kenc), 256, 128).decode(IV, fragment)
+                RecEnc = CtrAcpkm(self.enc_kaznechik_on_tree(self.seqnum), 256, 128).decode(IV, fragment)
                 fragment = RecEnc[:-16]
                 length = len(fragment)
                 mac = RecEnc[-16:]

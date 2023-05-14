@@ -2,13 +2,13 @@ import binascii
 import unittest
 from TLSTree import newTLSTreeKuznechik
 
-from ec.curve_params import id_tc26_gost_3410_2012_256_paramSetA, id_tc26_gost_3410_2012_512_paramSetC, \
+from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC, \
     id_tc26_gost_3410_12_512_paramSetA, id_tc26_gost_3410_2012_256_paramSetB
-from tools.formating import byte_from_hex, int_from_hex_little, int_from_hex_big
+from tools.formating import byte_from_hex, int_from_hex_big
 
 from KEG import KEG
 
-from Streebog import StreebogHasher
+from cipher.Streebog import StreebogHasher
 
 
 class TestTLSTree(unittest.TestCase):

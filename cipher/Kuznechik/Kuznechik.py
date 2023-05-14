@@ -312,9 +312,9 @@ class Kuznechik:
         self.K = key
         self.n = 128
         self.byteorder = byteorder
-        self.UnpackKey(key)
+        self.ChangeKey(key)
 
-    def UnpackKey(self, key):
+    def ChangeKey(self, key):
         self.key = [0 for j in range(10)]
 
         if self.byteorder == 'big':

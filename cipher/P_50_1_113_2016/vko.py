@@ -1,4 +1,4 @@
-from Streebog import StreebogHasher
+from cipher.Streebog import StreebogHasher
 
 
 # VKO_GOSTR3410_2012_256

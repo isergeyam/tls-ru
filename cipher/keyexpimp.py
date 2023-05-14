@@ -1,5 +1,5 @@
 from omac import OMAC
-from Kuznechik import Kuznechik
+from cipher.Kuznechik import Kuznechik
 from ctr import Ctr
 
 

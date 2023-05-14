@@ -1,5 +1,5 @@
 from cipher.vko import VKO
-from Streebog import StreebogHasher
+from cipher.Streebog import StreebogHasher
 from cipher.prf import PRF
 
 
