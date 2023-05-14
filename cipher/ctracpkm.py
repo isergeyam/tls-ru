@@ -1,13 +1,13 @@
 from Kuznechik import Kuznechik
 import math
+import numpy as np
 
 
 def xor(a: bytearray, b: bytearray):
     assert len(a) == len(b)
-    result = bytearray(a)
-    for i, b in enumerate(b):
-        result[i] ^= b
-    return result
+    n_b1 = np.frombuffer(a, dtype='uint8')
+    n_b2 = np.frombuffer(b, dtype='uint8')
+    return (n_b1 ^ n_b2).tobytes()
 
 
 class CtrAcpkm(object):
@@ -45,6 +45,9 @@ class CtrAcpkm(object):
             ctr += 1
         return C
 
+    def decode(self, IV: bytearray, message: bytearray) -> bytearray:
+        return self.encode(IV, message)
+
     def _acpkm(self, K):
         k = len(K.K)
         assert k % self.n == 0
@@ -81,3 +84,5 @@ if __name__ == "__main__":
     64 09 A9 C2 82 FA C8 D4 69 D2 21 E7 FB D6 DE 5D
     """)
     assert result == expected
+    inverse = ctr.decode(IV, result)
+    assert inverse == M
