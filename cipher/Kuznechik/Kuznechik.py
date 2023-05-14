@@ -3,10 +3,10 @@ import time
 
 
 def reverse(m):
-    for i in range(len(m)//2):
+    for i in range(len(m) // 2):
         tmp = m[i]
-        m[i] = m[len(m)-1 - i]
-        m[len(m)-1 - i] = tmp
+        m[i] = m[len(m) - 1 - i]
+        m[len(m) - 1 - i] = tmp
 
 
 def tobyte(a: int):
@@ -87,7 +87,6 @@ def l_transformation(v):
 
 
 def R_transformation(v):
-
     tmp = l_transformation(v)
     for i in range(15):
         v[i] = v[i + 1]
@@ -96,10 +95,9 @@ def R_transformation(v):
 
 
 def R_transformation_inv(v):
-
     tmp = v[15]
     for i in range(14, -1, -1):
-        v[i+1] = v[i]
+        v[i + 1] = v[i]
     v[0] = tmp
 
     v[0] = l_transformation(v)
@@ -244,7 +242,6 @@ def NonLinearTransformation(a):
 
 
 def UnpackKey():
-
     s = '8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef'
     key = [0, 0]
     key[0] = bytearray.fromhex(s[:32])
@@ -258,16 +255,16 @@ def UnpackKey():
         kkey[2 * i] = kkey[2 * i - 2]
         kkey[2 * i + 1] = kkey[2 * i - 1]
         for j in range(8):
-            tmp = kkey[2*i] ^ C[j + 8*(i-1)]
+            tmp = kkey[2 * i] ^ C[j + 8 * (i - 1)]
             v = tmp.to_bytes(16, 'little')
             tmp = precomputed_LS[0][v[0]] ^ precomputed_LS[1][v[1]] ^ precomputed_LS[2][v[2]] ^ \
-                precomputed_LS[3][v[3]] ^ precomputed_LS[4][v[4]] ^ precomputed_LS[5][v[5]] ^ \
-                precomputed_LS[6][v[6]] ^ precomputed_LS[7][v[7]] ^ precomputed_LS[8][v[8]] ^ \
-                precomputed_LS[9][v[9]] ^ precomputed_LS[10][v[10]] ^ precomputed_LS[11][v[11]] ^ \
-                precomputed_LS[12][v[12]] ^ precomputed_LS[13][v[13]] ^ precomputed_LS[14][v[14]] ^ \
-                precomputed_LS[15][v[15]] ^ kkey[2 * i + 1]
-            kkey[2*i + 1] = kkey[2*i]
-            kkey[2*i] = tmp
+                  precomputed_LS[3][v[3]] ^ precomputed_LS[4][v[4]] ^ precomputed_LS[5][v[5]] ^ \
+                  precomputed_LS[6][v[6]] ^ precomputed_LS[7][v[7]] ^ precomputed_LS[8][v[8]] ^ \
+                  precomputed_LS[9][v[9]] ^ precomputed_LS[10][v[10]] ^ precomputed_LS[11][v[11]] ^ \
+                  precomputed_LS[12][v[12]] ^ precomputed_LS[13][v[13]] ^ precomputed_LS[14][v[14]] ^ \
+                  precomputed_LS[15][v[15]] ^ kkey[2 * i + 1]
+            kkey[2 * i + 1] = kkey[2 * i]
+            kkey[2 * i] = tmp
 
 
 def Encode(input: bytearray):
@@ -278,11 +275,11 @@ def Encode(input: bytearray):
         tmp = m
         v = tmp.to_bytes(16, 'little')
         tmp = precomputed_LS[0][v[0]] ^ precomputed_LS[1][v[1]] ^ precomputed_LS[2][v[2]] ^ \
-            precomputed_LS[3][v[3]] ^ precomputed_LS[4][v[4]] ^ precomputed_LS[5][v[5]] ^ \
-            precomputed_LS[6][v[6]] ^ precomputed_LS[7][v[7]] ^ precomputed_LS[8][v[8]] ^ \
-            precomputed_LS[9][v[9]] ^ precomputed_LS[10][v[10]] ^ precomputed_LS[11][v[11]] ^ \
-            precomputed_LS[12][v[12]] ^ precomputed_LS[13][v[13]] ^ precomputed_LS[14][v[14]] ^ \
-            precomputed_LS[15][v[15]] ^ kkey[i + 1]
+              precomputed_LS[3][v[3]] ^ precomputed_LS[4][v[4]] ^ precomputed_LS[5][v[5]] ^ \
+              precomputed_LS[6][v[6]] ^ precomputed_LS[7][v[7]] ^ precomputed_LS[8][v[8]] ^ \
+              precomputed_LS[9][v[9]] ^ precomputed_LS[10][v[10]] ^ precomputed_LS[11][v[11]] ^ \
+              precomputed_LS[12][v[12]] ^ precomputed_LS[13][v[13]] ^ precomputed_LS[14][v[14]] ^ \
+              precomputed_LS[15][v[15]] ^ kkey[i + 1]
         m = tmp
     return tmp.to_bytes(16, 'big')
 
@@ -295,11 +292,11 @@ def Decode(input: bytearray):
         tmp = m
         v = tmp.to_bytes(16, 'little')
         tmp = precomputed_L_inv[0][v[0]] ^ precomputed_L_inv[1][v[1]] ^ precomputed_L_inv[2][v[2]] ^ \
-            precomputed_L_inv[3][v[3]] ^ precomputed_L_inv[4][v[4]] ^ precomputed_L_inv[5][v[5]] ^ \
-            precomputed_L_inv[6][v[6]] ^ precomputed_L_inv[7][v[7]] ^ precomputed_L_inv[8][v[8]] ^ \
-            precomputed_L_inv[9][v[9]] ^ precomputed_L_inv[10][v[10]] ^ precomputed_L_inv[11][v[11]] ^ \
-            precomputed_L_inv[12][v[12]] ^ precomputed_L_inv[13][v[13]] ^ precomputed_L_inv[14][v[14]] ^ \
-            precomputed_L_inv[15][v[15]]
+              precomputed_L_inv[3][v[3]] ^ precomputed_L_inv[4][v[4]] ^ precomputed_L_inv[5][v[5]] ^ \
+              precomputed_L_inv[6][v[6]] ^ precomputed_L_inv[7][v[7]] ^ precomputed_L_inv[8][v[8]] ^ \
+              precomputed_L_inv[9][v[9]] ^ precomputed_L_inv[10][v[10]] ^ precomputed_L_inv[11][v[11]] ^ \
+              precomputed_L_inv[12][v[12]] ^ precomputed_L_inv[13][v[13]] ^ precomputed_L_inv[14][v[14]] ^ \
+              precomputed_L_inv[15][v[15]]
         tmp = S_inverse(tmp)
         tmp ^= kkey[8 - i]
         m = tmp
@@ -328,16 +325,16 @@ class Kuznechik:
             self.key[2 * i] = self.key[2 * i - 2]
             self.key[2 * i + 1] = self.key[2 * i - 1]
             for j in range(8):
-                tmp = self.key[2*i] ^ C[j + 8*(i-1)]
+                tmp = self.key[2 * i] ^ C[j + 8 * (i - 1)]
                 v = tmp.to_bytes(16, 'little')
                 tmp = precomputed_LS[0][v[0]] ^ precomputed_LS[1][v[1]] ^ precomputed_LS[2][v[2]] ^ \
-                    precomputed_LS[3][v[3]] ^ precomputed_LS[4][v[4]] ^ precomputed_LS[5][v[5]] ^ \
-                    precomputed_LS[6][v[6]] ^ precomputed_LS[7][v[7]] ^ precomputed_LS[8][v[8]] ^ \
-                    precomputed_LS[9][v[9]] ^ precomputed_LS[10][v[10]] ^ precomputed_LS[11][v[11]] ^ \
-                    precomputed_LS[12][v[12]] ^ precomputed_LS[13][v[13]] ^ precomputed_LS[14][v[14]] ^ \
-                    precomputed_LS[15][v[15]] ^ self.key[2 * i + 1]
-                self.key[2*i + 1] = self.key[2*i]
-                self.key[2*i] = tmp
+                      precomputed_LS[3][v[3]] ^ precomputed_LS[4][v[4]] ^ precomputed_LS[5][v[5]] ^ \
+                      precomputed_LS[6][v[6]] ^ precomputed_LS[7][v[7]] ^ precomputed_LS[8][v[8]] ^ \
+                      precomputed_LS[9][v[9]] ^ precomputed_LS[10][v[10]] ^ precomputed_LS[11][v[11]] ^ \
+                      precomputed_LS[12][v[12]] ^ precomputed_LS[13][v[13]] ^ precomputed_LS[14][v[14]] ^ \
+                      precomputed_LS[15][v[15]] ^ self.key[2 * i + 1]
+                self.key[2 * i + 1] = self.key[2 * i]
+                self.key[2 * i] = tmp
 
     def Encode(self, input: bytearray):
         m = int.from_bytes(input, self.byteorder)
@@ -362,11 +359,11 @@ class Kuznechik:
             tmp = m
             v = tmp.to_bytes(16, 'little')
             tmp = precomputed_L_inv[0][v[0]] ^ precomputed_L_inv[1][v[1]] ^ precomputed_L_inv[2][v[2]] ^ \
-                precomputed_L_inv[3][v[3]] ^ precomputed_L_inv[4][v[4]] ^ precomputed_L_inv[5][v[5]] ^ \
-                precomputed_L_inv[6][v[6]] ^ precomputed_L_inv[7][v[7]] ^ precomputed_L_inv[8][v[8]] ^ \
-                precomputed_L_inv[9][v[9]] ^ precomputed_L_inv[10][v[10]] ^ precomputed_L_inv[11][v[11]] ^ \
-                precomputed_L_inv[12][v[12]] ^ precomputed_L_inv[13][v[13]] ^ precomputed_L_inv[14][v[14]] ^ \
-                precomputed_L_inv[15][v[15]]
+                  precomputed_L_inv[3][v[3]] ^ precomputed_L_inv[4][v[4]] ^ precomputed_L_inv[5][v[5]] ^ \
+                  precomputed_L_inv[6][v[6]] ^ precomputed_L_inv[7][v[7]] ^ precomputed_L_inv[8][v[8]] ^ \
+                  precomputed_L_inv[9][v[9]] ^ precomputed_L_inv[10][v[10]] ^ precomputed_L_inv[11][v[11]] ^ \
+                  precomputed_L_inv[12][v[12]] ^ precomputed_L_inv[13][v[13]] ^ precomputed_L_inv[14][v[14]] ^ \
+                  precomputed_L_inv[15][v[15]]
             tmp = S_inverse(tmp)
             tmp ^= self.key[8 - i]
             m = tmp

@@ -56,17 +56,21 @@ class TLSTree:
             self.keys[i + 1] = self.divers[i](bytearray(self.levels_in[i].to_bytes(8, 'big')))
 
 
-class KuznechikOnTree:
-    def __init__(self, key: bytearray):
+def KuznechikOnTree(key):
+    return TLSTreeWraper(key, Kuznechik)
+
+
+class TLSTreeWraper:
+    def __init__(self, key, cipher, *args, **kwargs):
         self.tlstree = newTLSTreeKuznechik(key)
         self.index = 0
-        self.kuznechik = Kuznechik(self.tlstree(self.index))
+        self.cipher = cipher(self.tlstree(self.index), *args, **kwargs)
 
     def __call__(self, index):
         if self.index // 64 != index // 64:
-            self.kuznechik.ChangeKey(self.tlstree(index))
+            self.cipher.ChangeKey(self.tlstree(index))
             self.index = index
-        return self.kuznechik
+        return self.cipher
 
 
 def newTLSTreeKuznechik(key: bytearray):
@@ -78,6 +82,10 @@ def newTLSTreeKuznechik(key: bytearray):
 
 
 if __name__ == "__main__":
+    wp = TLSTreeWraper(bytearray(0), Kuznechik)
+
+    kuz = wp(0)
+
     my_key = bytearray.fromhex("""
     FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
     FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
