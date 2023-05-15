@@ -1,9 +1,6 @@
-from record.record_protocol import RecordAlternative
-
 import asyncio
 
 from contextlib import contextmanager
-
 
 from record.client import HandShakerClient
 
@@ -21,9 +18,8 @@ def exception_guard(message_on_exit: str = 'exit'):
 
 async def handle_read_records(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     global server
-    rec = RecordAlternative(reader, writer)
 
-    handshaker = HandShakerServer(rec)
+    handshaker = HandShakerServer(reader, writer)
 
     await handshaker.handshake()
 
@@ -52,9 +48,8 @@ async def main():
     await server_started.wait()
 
     reader, writer = await asyncio.open_connection('localhost', 8888)
-    rec = RecordAlternative(reader, writer)
 
-    handshakerclient = HandShakerClient(rec)
+    handshakerclient = HandShakerClient(reader, writer)
 
     await handshakerclient.handshake()
 

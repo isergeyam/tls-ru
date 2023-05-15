@@ -6,13 +6,22 @@ from cipher.Streebog import StreebogHasher
 from cipher.keyexpimp import KExpImp15
 from cipher.P_50_1_113_2016.prf import PRF
 
-test = False
+from record.record_protocol import RecordWriter, RecordReader
+
+test = True
 
 
 class HandShakerClient:
 
-    def __init__(self, record):
-        self.hr, self.hw = record.handshaker()
+    def __init__(self, reader, writer):
+        self.IVr = None
+        self.IVw = None
+        self.KrMac = None
+        self.KrEnc = None
+        self.KwMac = None
+        self.KwEnc = None
+        self.hr = RecordReader(reader)
+        self.hw = RecordWriter(22, writer)
         self.parser = HandshakeParser()
         self.hasher = StreebogHasher(256)
         self.hasher_HM = StreebogHasher(256)
@@ -52,6 +61,7 @@ class HandShakerClient:
 
     async def receive(self):
         res = await self.parser(self.hr)
+        assert self.hr.type == 22
         if res.variant_type != 0:
             self.hasher_HM << res.to_bytes()
         return res
@@ -66,7 +76,6 @@ class HandShakerClient:
         await self.recivecert()
         await self.receiveserverdone()
         self.keyexchange()
-
 
         await self.unpack()
 
@@ -109,7 +118,7 @@ class HandShakerClient:
 
     async def receiveserverdone(self):
         res = await self.receive()
-
+        assert res.variant_type == 14
 
     async def unpack(self):
         label = bytearray()
@@ -125,8 +134,11 @@ class HandShakerClient:
         label = bytearray()
         label.extend(map(ord, "key expansion"))
         tmp = PRF(self.MS, 256).digest(label, self.rs + self.rc, 16 * 8 * 9)
-        # feed key material to record
-        # send chenge cipher spec
+        self.KwMac, self.KrMac, self.KwEnc, self.KrEnc, self.IVw, self.IVr = split_key_material(tmp)
+
+        self.hw.write_change_cypher_spec(bytearray.fromhex("01"))
+
+        self.hw.record_writer.set_keys(self.KwMac, self.KwEnc, self.IVw)
 
         HM = ~self.hasher_HM
         if test:
@@ -146,9 +158,13 @@ class HandShakerClient:
                                     6D 2B 1B B2 A8 9E 13 51 01 FC 9E 49 ED A8 0F B4
                                     """)
 
-        server_verify_data = PRF(self.MS, 256).digest("server finished", HM, 256)
+        server_verify_data = PRF(self.MS, 256).digest("server fiрасизмnished", HM, 256)
 
-        # receive message to cypher_spec
+        res = await self.hr.read(1)
+
+        assert self.hr.type == 20 and res == bytearray.fromhex("01")
+
+        self.hr.record_reader.set_keys(self.KrMac, self.KrEnc, self.IVr)
 
         res = await self.receive()
 

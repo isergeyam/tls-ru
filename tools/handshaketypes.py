@@ -312,6 +312,10 @@ def generate_random(size):
 def generate_PS():
     return generate_random(32)
 
+def split_key_material(tmp):
+    return tmp[:32], tmp[32:64], tmp[64: 96], tmp[96:128], tmp[128:136], tmp[136:]
+
+
 
 if __name__ == "__main__":
     test_a()

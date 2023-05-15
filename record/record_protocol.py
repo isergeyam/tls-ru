@@ -113,6 +113,22 @@ class RecordWriterSimple(RecordBase):
                 RecEnc = CtrAcpkm(self.enc_kaznechik_on_tree(self.seqnum), 256, 128).encode(IV, EncData)
                 length = len(RecEnc)
 
+                print(binascii.hexlify(bytearray.fromhex("""
+                                4DC53D655EDFD1843AF69ADBDE989C0B
+                                         1F0C0A1A0FD1B3F458029D8F9989FBF9
+                                         6C5C42971063A9B70714F412E4F6280F
+                                         7C21601B
+                                """)))
+                print(binascii.hexlify(RecEnc))
+                print(binascii.hexlify(bytearray.fromhex("""
+                                F9887C3654B6CCC6AE7D7B18A46C663F
+                         3D1DAF30C9A853A9871077FDD5CA063B
+                         2C81BCC9D59FA6E3F5FAD9B2599BB586
+                         854A2D76
+                                """)))
+
+
+
                 writer.write(bytearray(record_type.to_bytes(1, 'big')) +
                              bytearray(self.version.to_bytes(2, 'big')) +
                              bytearray(length.to_bytes(2, 'big')) +
@@ -158,6 +174,9 @@ class RecordWriter:
 
     def write(self, message):
         self.record_writer.write_records(self.record_type, message, self.io_writer)
+
+    def write_change_cypher_spec(self, message):
+        self.record_writer.write_records(20, message, self.io_writer)
 
 
 num_messages = 3

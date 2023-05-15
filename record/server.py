@@ -4,17 +4,20 @@ from tools.handshakeparser import HandshakeParser
 from cipher.TLSRu.KEG import KEG
 from cipher.Streebog import StreebogHasher
 from cipher.keyexpimp import KExpImp15
+
+from record.record_protocol import RecordWriter, RecordReader
+from cipher.P_50_1_113_2016.prf import PRF
 from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC
 
-from cipher.P_50_1_113_2016.prf import PRF
-
-test = False
+test = True
 
 
 class HandShakerServer:
 
-    def __init__(self, record):
-        self.hr, self.hw = record.handshaker()
+    def __init__(self, reader, writer):
+        self.PMSExp = None
+        self.hr = RecordReader(reader)
+        self.hw = RecordWriter(22, writer)
         self.parser = HandshakeParser()
         self.hasher = StreebogHasher(256)
         self.hasher_HM = StreebogHasher(256)
@@ -44,6 +47,7 @@ class HandShakerServer:
 
     async def receive(self):
         res = await self.parser(self.hr)
+        assert self.hr.type == 22
         if res.variant_type != 0:
             self.hasher_HM << res.to_bytes()
         return res
@@ -151,7 +155,8 @@ class HandShakerServer:
         label = bytearray()
         label.extend(map(ord, "key expansion"))
         tmp = PRF(self.MS, 256).digest(label, self.rs + self.rc, 16 * 8 * 9)
-        # feed key material to record
+
+        self.KrMac, self.KwMac, self.KrEnc, self.KwEnc, self.IVr, self.IVw = split_key_material(tmp)
 
         HM = ~self.hasher_HM
         if test:
@@ -162,13 +167,19 @@ class HandShakerServer:
 
         client_verify_data = PRF(self.MS, 256).digest("client finished", HM, 256)
 
-        # receive message to cypher_spec
+        res = await self.hr.read(1)
+
+        assert self.hr.type == 20 and res == bytearray.fromhex("01")
+
+        self.hr.record_reader.set_keys(self.KrMac, self.KrEnc, self.IVr)
 
         res = await self.receive()
 
         assert client_verify_data == res["verify_data"].value
 
-        # send chenge cipher spec
+        self.hw.write_change_cypher_spec(bytearray.fromhex("01"))
+
+        self.hw.record_writer.set_keys(self.KwMac, self.KwEnc, self.IVw)
 
         HM = ~self.hasher_HM
         if test:
