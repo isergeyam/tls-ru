@@ -57,10 +57,10 @@ class TLSTree:
 
 
 def KuznechikOnTree(key):
-    return TLSTreeWraper(key, Kuznechik)
+    return TLSTreeWrapper(key, Kuznechik)
 
 
-class TLSTreeWraper:
+class TLSTreeWrapper:
     def __init__(self, key, cipher, *args, **kwargs):
         self.tlstree = newTLSTreeKuznechik(key)
         self.index = 0
@@ -82,7 +82,7 @@ def newTLSTreeKuznechik(key: bytearray):
 
 
 if __name__ == "__main__":
-    wp = TLSTreeWraper(bytearray(0), Kuznechik)
+    wp = TLSTreeWrapper(bytearray(0), Kuznechik)
 
     kuz = wp(0)
 
