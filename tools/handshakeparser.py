@@ -104,7 +104,7 @@ def HandshakeParser():
 
     parser.remember("ServerHelloDone", "dict(3)")
 
-    parser.remember("ClientKeyExchange", "bytes(3)")
+    parser.remember("ClientKeyExchange", "dict(3, exchange_keys, ASN)")
 
     parser.remember("CertificateVerify", "dict(3, algorithm, SignatureAndHashAlgorithm, signature, bytes(2))")
 
@@ -259,6 +259,7 @@ async def test_client_key_exchange():
 
     mybufferstream = new_io_bytes_from_string(mybuffer)
     res = await reader(mybufferstream)
+    print(res)
     expected = Variant \
         (0x10, bytearray.fromhex(key_exchange_data))
 
