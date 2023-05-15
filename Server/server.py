@@ -36,7 +36,7 @@ async def handle_handshake(reader: asyncio.StreamReader, writer: asyncio.StreamW
 
     await asyncio.sleep(1)
 
-    rs = generate_random()
+    rs = generate_random_with_time()
 
     print("random server generated\n", binascii.hexlify(rs))
 

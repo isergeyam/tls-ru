@@ -29,7 +29,7 @@ async def client():
     parser = HandshakeParser()
     rec = Record()
 
-    rc = generate_random()
+    rc = generate_random_with_time()
 
     print("random client generated\n", binascii.hexlify(rc))
 

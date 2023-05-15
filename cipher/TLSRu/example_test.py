@@ -56,7 +56,7 @@ class TestTLSTree(unittest.TestCase):
         A5 83 AE EF DB 67 C7 F4 21 4A 6A 29 8E 99 E3 25
         """)
 
-        keg = KEG(curve, 256)
+        keg = KEG(curve)
         lhs = keg(keph, Qs, H)
         rhs = keg(ks, Qeph, H)
 
@@ -98,7 +98,7 @@ class TestTLSTree(unittest.TestCase):
         9A 58 98 D8 45 27 C7 CB DE C1 1E 53 39 90 6A 1A
         """)
 
-        keg = KEG(curve, 256)
+        keg = KEG(curve)
         lhs = keg(keph, Qs, H)
         rhs = keg(ks, Qeph, H)
         print(binascii.hexlify(keph.to_bytes(64, 'big')))
@@ -135,7 +135,7 @@ class TestTLSTree(unittest.TestCase):
         A5 83 AE EF DB 67 C7 F4 21 4A 6A 29 8E 99 E3 25
         """)
 
-        keg = KEG(curve, 512)
+        keg = KEG(curve)
         lhs = keg(keph, Qs, H)
         rhs = keg(ks, Qeph, H)
 

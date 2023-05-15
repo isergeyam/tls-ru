@@ -1,5 +1,5 @@
 from cipher.Kuznechik import Kuznechik
-from ctracpkm import xor
+from cipher.ctracpkm import xor
 import math
 
 

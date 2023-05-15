@@ -1,4 +1,5 @@
 import binascii
+import os
 
 from tools.result import Result, fbyteresult, variant
 from collections import OrderedDict
@@ -150,18 +151,37 @@ def get_name_from_cert(cert):
 
 def get_point_from_cert(cert, curve):
     xy = cert["body"][0]["certificate"][0][6][1].value[4:]
-    print(binascii.hexlify(xy))
     part = len(xy) // 2
     xi = int.from_bytes(xy[:part], 'little')
-    print(binascii.hexlify(xi.to_bytes(64, 'big')))
     yi = int.from_bytes(xy[part:], 'little')
-    print(binascii.hexlify(yi.to_bytes(64, 'big')))
     return curve(curve.F[xi], curve.F[yi])
+
+
+def get_data_from_keyexch(keyexch, curve):
+    PMSExp = keyexch["exchange_keys"][0].value
+    xy = keyexch["exchange_keys"][1][1].value[4:]
+
+    part = len(xy) // 2
+    xi = int.from_bytes(xy[:part], 'little')
+    yi = int.from_bytes(xy[part:], 'little')
+    return PMSExp, curve(curve.F[xi], curve.F[yi])
 
 
 def get_curve_from_cert(cert):
     oid = cert["body"][0]["certificate"][0][6][0][1][0].to_bytes()
     return get_curve(oid[2:])
+
+
+def KeyEschange(PMSExp, point, curve):
+    res = bytearray.fromhex("""
+    10 00 00 E2 30 81 DF 04 30 
+    """) + PMSExp + bytearray.fromhex("""
+    30 81 AA 30 21 06 08
+    2A 85 03 07 01 01 01 02 30 15 06 09 2A 85 03 07
+    01 02 01 02 03 06 08 2A 85 03 07 01 01 02 03 03
+    81 84 00 04 81 80
+    """) + bytearray(point.get_x().to_bytes(curve.n, 'little')) + bytearray(point.get_y().to_bytes(curve.n, 'little'))
+    return res
 
 
 def test_a():
@@ -278,11 +298,19 @@ def test_b():
     assert mybuffer == res.to_bytes()
 
 
-def generate_random():
+def generate_random_with_time():
     sec = int(time.time())
     res = bytearray(sec.to_bytes(4, 'big'))
-    res.extend(bytearray(28))
+    res.extend(generate_random(28))
     return res
+
+
+def generate_random(size):
+    return bytearray(os.urandom(size))
+
+
+def generate_PS():
+    return generate_random(32)
 
 
 if __name__ == "__main__":

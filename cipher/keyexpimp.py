@@ -1,6 +1,6 @@
-from omac import OMAC
+from cipher.omac import OMAC
 from cipher.Kuznechik import Kuznechik
-from ctr import Ctr
+from cipher.ctr import Ctr
 
 
 class KExpImp15(object):

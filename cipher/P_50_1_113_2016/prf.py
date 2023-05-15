@@ -13,9 +13,13 @@ class PRF:
         self.hmac = self.hmac(key)
         return self
 
-    def digest(self, label: bytearray, seed: bytearray, size: int):
+    def digest(self, label: bytearray or str, seed: bytearray, size: int):
+        if isinstance(label, str):
+            tmp = bytearray()
+            tmp.extend(map(ord, label))
+            label = tmp
         A = [label + seed]
-        n = size // self.mode
+        n = (size + self.mode - 1) // self.mode
 
         for i in range(1, n + 1):
             A.append(self.hmac.digest(A[i - 1]))
@@ -27,4 +31,4 @@ class PRF:
         res = b''
         for i in P:
             res += i
-        return bytearray(res)
+        return bytearray(res)[: (size + 7) // 8]

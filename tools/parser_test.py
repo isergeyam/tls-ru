@@ -561,6 +561,60 @@ class TestParser(IsolatedAsyncioTestCase):
 
         self.check_result_output(mybuffer, res)
 
+    async def test_key_exchange(self):
+        mybuffer = bytearray.fromhex(
+            """
+            10 00 00 E2 30 81 DF 04 30 25 0D 1B 67 A2 70 AB
+            04 D3 F6 54 18 E1 D3 80 B4 CB 94 5F 0A 3D CA 51
+            50 0C F3 A1 BE F3 7F 76 C0 73 41 A9 83 9C CF 6C
+            BA 71 89 DA 61 EB 67 17 6C 30 81 AA 30 21 06 08
+            2A 85 03 07 01 01 01 02 30 15 06 09 2A 85 03 07
+            01 02 01 02 03 06 08 2A 85 03 07 01 01 02 03 03
+            81 84 00 04 81 80 C6 5B D7 05 B6 86 01 98 BA D4
+            A7 0E B9 37 B6 B4 80 84 E2 60 AD F7 B1 07 4A 89
+            18 28 62 C5 BF FE 64 86 28 35 41 33 0B 15 0F E4
+            8A 73 7C B3 E5 BB 04 3E 4A 11 34 03 5A 6D 47 9B
+            18 93 51 BE 41 C9 BE 9A 7E 2A FC 24 62 76 FE 4E
+            23 56 84 52 93 B0 31 78 E2 EC 00 3C A8 A8 14 32
+            4F 16 35 0B C0 AB 53 41 87 DE 86 C7 6B E2 9A 94
+            0A 8D B2 AD 71 64 6A A0 C9 52 FD F4 11 20 65 48
+            81 3E B9 F7 54 A1
+            """
+        )
+
+        mybufferstream = abyte(io.BytesIO(mybuffer))
+
+        reader = HandshakeParser()
+
+        res = await reader(mybufferstream)
+
+        print(res)
+
+    async def test_key_exchange_2(self):
+        mybuffer = bytearray.fromhex(
+            """
+            10 00 00 95 30 81 92 04 28 D7 F0 F0 42 23 67 86
+            7B 25 FA 42 33 A9 54 F5 8B DE 92 E9 C9 BB FB 88
+            16 C9 9F 15 E6 39 87 22 A0 B2 B7 BF E8 49 3E 9A
+            5C 30 66 30 1F 06 08 2A 85 03 07 01 01 01 01 30
+            13 06 07 2A 85 03 02 02 23 01 06 08 2A 85 03 07
+            01 01 02 02 03 43 00 04 40 93 07 E0 98 C1 71 88
+            F1 F1 47 7F EF B8 7F AE F1 BB CD 95 67 3B 1B 8F
+            97 03 A2 62 D2 63 6D F3 A8 87 F8 14 1F EA C2 5A
+            17 CC B5 96 04 61 ED 16 B0 F8 B1 BE 93 59 43 95
+            A1 0E 64 85 44 6B 5D CA 34
+            """
+        )
+
+        mybufferstream = abyte(io.BytesIO(mybuffer))
+
+        reader = HandshakeParser()
+
+        res = await reader(mybufferstream)
+
+        print(res)
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,14 +1,15 @@
 import unittest
 import time
 from cipher import Streebog
+from cipher.Streebog.Streebog import streebog
 import binascii
 
 
 def reverse(m):
-    for i in range(len(m)//2):
+    for i in range(len(m) // 2):
         tmp = m[i]
-        m[i] = m[len(m)-1 - i]
-        m[len(m)-1 - i] = tmp
+        m[i] = m[len(m) - 1 - i]
+        m[len(m) - 1 - i] = tmp
 
 
 class TestStreebog(unittest.TestCase):
@@ -16,18 +17,18 @@ class TestStreebog(unittest.TestCase):
     def test_big_zero(self):
         start = time.time()
         test = bytearray(1024 * 1024)
-        res = Streebog.streebog(test)
+        res = streebog(test)
         print(binascii.hexlify(res))
-        print("1 mb per :", time.time()-start)
+        print("1 mb per :", time.time() - start)
 
     def test_big_ff(self):
         start = time.time()
-        test = bytearray.fromhex('ff'*(1024*1024))
-        res = Streebog.streebog(test)
+        test = bytearray.fromhex('ff' * (1024 * 1024))
+        res = streebog(test)
         print(binascii.hexlify(res))
-        print("1 mb per :", time.time()-start)
+        print("1 mb per :", time.time() - start)
 
-    def check_hex_input_from_gost(self, input,  exp256, exp512):
+    def check_hex_input_from_gost(self, input, exp256, exp512):
         byte_array_512_exp = bytearray.fromhex(
             exp512)
         byte_array_256_exp = bytearray.fromhex(
@@ -75,9 +76,9 @@ class TestStreebog(unittest.TestCase):
                          byte_array_512_exp)
 
     def check_input(self, byte_array_input, byte_array_256_exp, byte_array_512_exp):
-        byte_array_512_res = Streebog.streebog(
+        byte_array_512_res = streebog(
             byte_array_input, 512)
-        byte_array_256_res = Streebog.streebog(
+        byte_array_256_res = streebog(
             byte_array_input, 256)
 
         self.hasher512.update(byte_array_input)
@@ -134,9 +135,10 @@ class TestStreebog(unittest.TestCase):
                                'df1fda9ce83191390537358031db2ecaa6aa54cd0eda241dc107105e13636b95',
                                'b0fd29ac1b0df441769ff3fdb8dc564df67721d6ac06fb28ceffb7bbaa7948c6c014ac999235b58cb26fb60fb112a145d7b4ade9ae566bf2611402c552d20db7')
 
-        self.check_hex_input('36373435323330313e3f3c3d3a3b383926272425222320212e2f2c2d2a2b282936363636363636363636363636363636363636363636363636363636363636360126bdb87800af214341456563780100',
-                             '612fbfc167a28e5554794a692ef508394fee9a8a3ba57ae919f44b62a2a361d4',
-                             '0d5a45fe1a3af3d8b8de724d6e03de7bfaeb479ceaf4b9dae658effb30d09287081164767218d4db508f6fd1b355ab0e47d2a1fefcc513f779ac47a723b6fc92')
+        self.check_hex_input(
+            '36373435323330313e3f3c3d3a3b383926272425222320212e2f2c2d2a2b282936363636363636363636363636363636363636363636363636363636363636360126bdb87800af214341456563780100',
+            '612fbfc167a28e5554794a692ef508394fee9a8a3ba57ae919f44b62a2a361d4',
+            '0d5a45fe1a3af3d8b8de724d6e03de7bfaeb479ceaf4b9dae658effb30d09287081164767218d4db508f6fd1b355ab0e47d2a1fefcc513f779ac47a723b6fc92')
 
     def test_hasher_by_parts(self):
         for i in range(16):
@@ -144,15 +146,20 @@ class TestStreebog(unittest.TestCase):
                 for k in range(j):
                     self.hasher512.update(bytearray(i))
                     self.hasher256.update(bytearray(i))
+                    self.hasherwithfinish.update(bytearray(i))
+                    ~self.hasherwithfinish
                 res1 = self.hasher512.finish()
-                res2 = Streebog.streebog(bytearray(i * j))
-                res3 = Streebog.streebog(bytearray(i * j), 256)
+                res2 = streebog(bytearray(i * j))
+                res3 = streebog(bytearray(i * j), 256)
                 res4 = self.hasher256.finish()
+                res5 = self.hasherwithfinish.finish()
                 self.assertEqual(res1, res2)
                 self.assertEqual(res3, res4)
+                self.assertEqual(res3, res5)
 
     hasher512 = Streebog.StreebogHasher(512)
     hasher256 = Streebog.StreebogHasher(256)
+    hasherwithfinish = Streebog.StreebogHasher(256)
 
 
 if __name__ == '__main__':
