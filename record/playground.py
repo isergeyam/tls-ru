@@ -147,18 +147,6 @@ async def main():
 
     print(get_name_from_cert(res))
 
-    x, y = get_point_from_cert(res)
-    reverse(x)
-    reverse(y)
-
-    xi = int.from_bytes(x, 'big')
-    yi = int.from_bytes(y, 'big')
-
-    print(binascii.hexlify(x))
-    print(binascii.hexlify(y))
-
-    print(len(x))
-
     curve = get_curve_from_cert(res)
     G = curve.G
 
@@ -173,9 +161,7 @@ async def main():
 
     print("---KEPH--\n", Keph)
 
-    Qs = curve(curve.F[xi], curve.F[yi])
-
-    print(Qs)
+    Qs = get_point_from_cert(res, curve)
 
     print("client get Qs", Qs)
 

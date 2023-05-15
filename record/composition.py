@@ -1,6 +1,6 @@
-from cipher.vko import VKO
+from cipher.P_50_1_113_2016.vko import VKO
 from cipher.Streebog import StreebogHasher
-from cipher.prf import PRF
+from cipher.P_50_1_113_2016.prf import PRF
 
 
 def get_Qeph_PSExp(r_s, r_c, Q_s, PS):

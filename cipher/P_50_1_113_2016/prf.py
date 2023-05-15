@@ -1,4 +1,4 @@
-from hmacGOST import HMAC
+from cipher.P_50_1_113_2016.hmacGOST import HMAC
 
 
 # PRF_TLS_GOSTR3411_2012_256

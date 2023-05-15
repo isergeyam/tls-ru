@@ -148,9 +148,15 @@ def get_name_from_cert(cert):
     return cert["body"][0]["certificate"][0][5][0][0][1].value
 
 
-def get_point_from_cert(cert):
-    xy = cert["body"][0]["certificate"][0][6][1].value
-    return xy[4:68], xy[68:]
+def get_point_from_cert(cert, curve):
+    xy = cert["body"][0]["certificate"][0][6][1].value[4:]
+    print(binascii.hexlify(xy))
+    part = len(xy) // 2
+    xi = int.from_bytes(xy[:part], 'little')
+    print(binascii.hexlify(xi.to_bytes(64, 'big')))
+    yi = int.from_bytes(xy[part:], 'little')
+    print(binascii.hexlify(yi.to_bytes(64, 'big')))
+    return curve(curve.F[xi], curve.F[yi])
 
 
 def get_curve_from_cert(cert):
