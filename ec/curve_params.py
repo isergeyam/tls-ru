@@ -10,7 +10,8 @@ params = [["id-tc26-gost-3410-2012-256-paramSetB", "[1.2.643.7.1.2.1.1.2]", 0],
           ['id-tc26-gost-3410-12-512-paramSetA', '[1.2.643.7.1.2.1.2.1]', 0],
           ['id-tc26-gost-3410-12-512-paramSetB', '[1.2.643.7.1.2.1.2.2]', 0],
           ['id-tc26-gost-3410-2012-256-paramSetA', '[1.2.643.7.1.2.1.1.1]', 0],
-          ['id-tc26-gost-3410-2012-512-paramSetC', '[1.2.643.7.1.2.1.2.3]', 0]
+          ['id-tc26-gost-3410-2012-512-paramSetC', '[1.2.643.7.1.2.1.2.3]', 0],
+          ['id-GostR3410-2001-CryptoPro-A-ParamSet', '[]', 0]
           ]
 
 curve_params_to_ec = dict()

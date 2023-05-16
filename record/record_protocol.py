@@ -60,7 +60,7 @@ class RecordReaderSimple(RecordBase):
             record_type = int.from_bytes(await reader.readexactly(1), 'big')
             # assert type == 0x23
             version = int.from_bytes(await reader.readexactly(2), 'big')
-            assert version == 0x0303
+            # assert version == 0x0303
             length = int.from_bytes(await reader.readexactly(2), 'big')
             fragment = await reader.readexactly(length)
             if not self.cipher:
@@ -69,7 +69,7 @@ class RecordReaderSimple(RecordBase):
             else:
                 omac = OMAC(self.mac_kaznechik_on_tree(self.seqnum), 128)
                 IV = bytearray(((int.from_bytes(self.IV, 'big') + self.seqnum) % pow(2, 64)).to_bytes(8, 'big'))
-                RecEnc = CtrAcpkm(self.enc_kaznechik_on_tree(self.seqnum), 256, 128).decode(IV, fragment)
+                RecEnc = CtrAcpkm(self.enc_kaznechik_on_tree(self.seqnum), 4096 * 8, 128).decode(IV, fragment)
                 fragment = RecEnc[:-16]
                 length = len(fragment)
                 mac = RecEnc[-16:]
@@ -110,22 +110,9 @@ class RecordWriterSimple(RecordBase):
 
                 EncData = fragment + RecMac
                 IV = bytearray(((int.from_bytes(self.IV, 'big') + self.seqnum) % pow(2, 64)).to_bytes(8, 'big'))
-                RecEnc = CtrAcpkm(self.enc_kaznechik_on_tree(self.seqnum), 256, 128).encode(IV, EncData)
+                RecEnc = CtrAcpkm(self.enc_kaznechik_on_tree(self.seqnum), 4096 * 8, 128).encode(IV, EncData)
                 length = len(RecEnc)
 
-                print(binascii.hexlify(bytearray.fromhex("""
-                                4DC53D655EDFD1843AF69ADBDE989C0B
-                                         1F0C0A1A0FD1B3F458029D8F9989FBF9
-                                         6C5C42971063A9B70714F412E4F6280F
-                                         7C21601B
-                                """)))
-                print(binascii.hexlify(RecEnc))
-                print(binascii.hexlify(bytearray.fromhex("""
-                                F9887C3654B6CCC6AE7D7B18A46C663F
-                         3D1DAF30C9A853A9871077FDD5CA063B
-                         2C81BCC9D59FA6E3F5FAD9B2599BB586
-                         854A2D76
-                                """)))
 
 
 

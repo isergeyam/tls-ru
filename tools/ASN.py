@@ -31,6 +31,10 @@ async def parse_ASN(buffer: io.BytesIO):
         return Result("ASN_OCTET_STRING", await get_bytes(buffer, length), 0, 0)
     if type == 6:
         return Result("ASN_OBJECT_IDENTIFIER", await get_bytes(buffer, length), 0, 0)
+    if type == 12:
+        return Result("ASN_UTF8_STRING", await get_bytes(buffer, length), 0, 0)
+    if type == 18:
+        return Result("ASN_NUMERIC_STRING", await get_bytes(buffer, length), 0, 0)
     if type == 19:
         return Result("ASN_PRINTABLE_STRING", await get_bytes(buffer, length), 0, 0)
     if type == 22:
@@ -57,7 +61,7 @@ async def parse_ASN(buffer: io.BytesIO):
             error_incorrect_length_ASN_content_specific()
         return Result("ASN_Context_Specific", value, 0, 0, variant_type=type - 160)
 
-    return Result("ASN_Unknown", await get_bytes(buffer, len), 0, 0, variant_type=type)
+    return Result("ASN_Unknown", await get_bytes(buffer, length), 0, 0, variant_type=type)
 
 
 def test_INT():

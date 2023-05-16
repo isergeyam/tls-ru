@@ -169,6 +169,8 @@ def get_data_from_keyexch(keyexch, curve):
 
 def get_curve_from_cert(cert):
     oid = cert["body"][0]["certificate"][0][6][0][1][0].to_bytes()
+    print(cert["body"][0]["certificate"][0][6][0][0] )
+    print(cert["body"][0])
     return get_curve(oid[2:])
 
 

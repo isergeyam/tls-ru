@@ -27,6 +27,12 @@ class Result:
         if self.type == "ASN_OBJECT_IDENTIFIER":
             return offset + "ASN_OBJECT_IDENTIFIER size " + str(self.size) + " value size " + str(
                 self.value_size) + " with value : " + str(decode_OID(self.value))
+        if self.type == "ASN_UTF8_STRING":
+            return offset + "ASN_UTF8_STRING size " + str(self.size) + " value size " + str(
+                self.value_size) + " with value : \"" + str(self.value.decode()) + "\""
+        if self.type == "ASN_NUMERIC_STRING":
+            return offset + "ASN_NUMERIC_STRING size " + str(self.size) + " value size " + str(
+                self.value_size) + " with value : \"" + str(self.value.decode()) + "\""
         if self.type == "ASN_PRINTABLE_STRING":
             return offset + "ASN_PRINTABLE_STRING size " + str(self.size) + " value size " + str(
                 self.value_size) + " with value : \"" + str(self.value.decode()) + "\""
@@ -137,7 +143,7 @@ class Result:
             self.value_size = get_int_size(self.value)
             self.size = get_length_size(self.value_size)
             return 1 + self.value_size + self.size
-        if self.type == "ASN_BIT_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OBJECT_IDENTIFIER" or self.type == "ASN_PRINTABLE_STRING" or self.type == "ASN_UTCTIME" or self.type == "ASN_GeneralizedTime" or self.type == "ASN_IA5String" or self.type == "ASN_Unknown":
+        if self.type == "ASN_BIT_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OCTET_STRING" or self.type == "ASN_OBJECT_IDENTIFIER" or self.type == "ASN_UTF8_STRING" or self.type == "ASN_NUMERIC_STRING" or self.type == "ASN_PRINTABLE_STRING" or self.type == "ASN_UTCTIME" or self.type == "ASN_GeneralizedTime" or self.type == "ASN_IA5String" or self.type == "ASN_Unknown":
             self.value_size = len(self.value)
             self.size = get_length_size(self.value_size)
             return 1 + self.value_size + self.size
@@ -208,6 +214,14 @@ class Result:
             writer.write(self.value)
         if self.type == "ASN_OBJECT_IDENTIFIER":
             writer.write(get_bytes_from_int(6, 1))
+            writer.write(encode_length(self.value_size, self.size))
+            writer.write(self.value)
+        if self.type == "ASN_UTF8_STRING":
+            writer.write(get_bytes_from_int(12, 1))
+            writer.write(encode_length(self.value_size, self.size))
+            writer.write(self.value)
+        if self.type == "ASN_NUMERIC_STRING":
+            writer.write(get_bytes_from_int(18, 1))
             writer.write(encode_length(self.value_size, self.size))
             writer.write(self.value)
         if self.type == "ASN_PRINTABLE_STRING":
