@@ -9,7 +9,7 @@ from record.record_protocol import RecordWriter, RecordReader
 from cipher.P_50_1_113_2016.prf import PRF
 from ec.curve_params import id_tc26_gost_3410_2012_512_paramSetC
 
-test = True
+test = False
 
 
 class HandShakerServer:

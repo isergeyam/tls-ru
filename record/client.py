@@ -8,7 +8,7 @@ from cipher.P_50_1_113_2016.prf import PRF
 
 from record.record_protocol import RecordWriter, RecordReader
 
-test = True
+test = False
 
 
 class HandShakerClient:
@@ -97,6 +97,7 @@ class HandShakerClient:
 
     async def recivecert(self):
         res = await self.receive()
+        print(res)
         self.curve = get_curve_from_cert(res)
         self.Qs = get_point_from_cert(res, self.curve)
         self.KEG = KEG(self.curve)
@@ -158,7 +159,7 @@ class HandShakerClient:
                                     6D 2B 1B B2 A8 9E 13 51 01 FC 9E 49 ED A8 0F B4
                                     """)
 
-        server_verify_data = PRF(self.MS, 256).digest("server fiрасизмnished", HM, 256)
+        server_verify_data = PRF(self.MS, 256).digest("server finished", HM, 256)
 
         res = await self.hr.read(1)
 

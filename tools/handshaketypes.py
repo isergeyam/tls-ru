@@ -150,7 +150,11 @@ def get_name_from_cert(cert):
 
 
 def get_point_from_cert(cert, curve):
-    xy = cert["body"][0]["certificate"][0][6][1].value[4:]
+    if (curve.n == 32):
+        xy = cert["body"][0]["certificate"][0][6][1].value[3:]
+    else:
+        xy = cert["body"][0]["certificate"][0][6][1].value[4:]
+
     part = len(xy) // 2
     xi = int.from_bytes(xy[:part], 'little')
     yi = int.from_bytes(xy[part:], 'little')
@@ -169,8 +173,6 @@ def get_data_from_keyexch(keyexch, curve):
 
 def get_curve_from_cert(cert):
     oid = cert["body"][0]["certificate"][0][6][0][1][0].to_bytes()
-    print(cert["body"][0]["certificate"][0][6][0][0] )
-    print(cert["body"][0])
     return get_curve(oid[2:])
 
 
@@ -314,9 +316,9 @@ def generate_random(size):
 def generate_PS():
     return generate_random(32)
 
+
 def split_key_material(tmp):
     return tmp[:32], tmp[32:64], tmp[64: 96], tmp[96:128], tmp[128:136], tmp[136:]
-
 
 
 if __name__ == "__main__":

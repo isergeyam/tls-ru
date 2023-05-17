@@ -16,7 +16,6 @@ class KEG:
             return self.vko.digest(d, Q, UKM)
         else:
             Kexp = self.vko.digest(d, Q, UKM)
-            print(binascii.hexlify(Kexp))
             seed = h[16: 24]
             kdf = KDFTree256(Kexp, "kdf tree", seed, 1)
             return kdf(512)
