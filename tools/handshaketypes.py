@@ -10,7 +10,7 @@ from ec import get_curve
 
 
 def TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC():
-    return fbyteresult("ff89")
+    return fbyteresult("c100")
 
 
 def TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC():
@@ -47,19 +47,19 @@ def renegotiation_info(value=bytearray(1)):
 
 
 def gostr34112012_256():
-    return fbyteresult("EE")
+    return fbyteresult("08")
 
 
 def gostr34112012_512():
-    return fbyteresult("EF")
+    return fbyteresult("08")
 
 
 def gostr34102012_256():
-    return fbyteresult("EE")
+    return fbyteresult("40")
 
 
 def gostr34102012_512():
-    return fbyteresult("EF")
+    return fbyteresult("41")
 
 
 def gostrHS_256():
@@ -92,7 +92,7 @@ def ClientHello(random, version=Version(), session_id=Sesion_id(),
                 cipher_suites=None,
                 extensions=None):
     if cipher_suites is None:
-        cipher_suites = [TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC(), TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC()]
+        cipher_suites = [TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC()]
     if extensions is None:
         extensions = [signature_algorithms(), renegotiation_info(), extended_master_secret()]
     d = OrderedDict()

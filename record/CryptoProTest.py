@@ -17,11 +17,11 @@ def exception_guard(message_on_exit: str = 'exit'):
 
 
 async def main():
-    # reader, writer = await asyncio.open_connection('www.cryptopro.ru', 444)
+    reader, writer = await asyncio.open_connection('www.cryptopro.ru', 4444)
 
     # reader, writer = await asyncio.open_connection('tlsgost-2001.cryptopro.ru', 4443)
 
-    reader, writer = await asyncio.open_connection('gosuslugi.ru', 443)
+    # reader, writer = await asyncio.open_connection('gosuslugi.ru', 443)
 
 
     handshakerclient = HandShakerClient(reader, writer)
